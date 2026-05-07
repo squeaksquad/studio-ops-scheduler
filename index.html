@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shift Scheduler — Studio Operations</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nunito',sans-serif;background:#FAF8F4;color:#1a1a1a}
+  ::-webkit-scrollbar{height:8px;width:8px}
+  ::-webkit-scrollbar-track{background:#f0ece4;border-radius:4px}
+  ::-webkit-scrollbar-thumb{background:#c4bfb4;border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#9e9889}
+  select{cursor:pointer}
+
+  .root{padding:20px 24px;min-height:100vh}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+  .title{font-size:22px;font-weight:700;letter-spacing:-0.02em}
+  .subtitle{font-size:13px;color:#7a756a;margin-top:2px}
+  .header-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+  .btn-primary{background:#2a2a2a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif}
+  .btn-primary:hover{background:#3a3a3a}
+  .btn-secondary{background:#fff;color:#1a1a1a;border:1px solid #d0cbc2;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif}
+  .btn-secondary:hover{background:#f5f2ec}
+  .btn-active{background:#2a6e5a!important;color:#fff!important;border-color:#2a6e5a!important}
+  .btn-active:hover{background:#35876e!important}
+  .btn-remove{background:none;border:1px solid #e0dbd2;color:#999;width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+  .btn-remove:hover{border-color:#c00;color:#c00}
+  .btn-add{background:none;border:1px dashed #c4bfb4;color:#7a756a;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;margin-top:4px}
+  .btn-add:hover{border-color:#999;color:#555}
+  .btn-sm{padding:5px 10px;font-size:12px;border-radius:5px}
+  .btn-arrow{background:none;border:1px solid #d0cbc2;color:#999;width:22px;height:18px;border-radius:3px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0}
+  .btn-arrow:hover:not(:disabled){border-color:#666;color:#333}
+  .btn-arrow:disabled{opacity:.3;cursor:default}
+  .loc-arrows{display:flex;flex-direction:column;gap:2px}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap}
+  .toolbar-left{display:flex;gap:6px;flex-wrap:wrap}
+  .btn-tool{background:#fff;border:1px solid #e0dbd2;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px;color:#555}
+  .btn-tool:hover{background:#f5f2ec;border-color:#ccc}
+  .btn-tool-active{background:#f0ece4;border-color:#c4bfb4}
+  .btn-tool-settings{padding:6px 10px}
+  .tool-icon{font-size:14px}
+
+  .settings-panel{background:#fff;border:1px solid #e0dbd2;border-radius:10px;padding:16px 20px;margin-bottom:16px}
+  .snap-panel{background:#fff;border:1px solid #e0dbd2;border-radius:10px;padding:16px 20px;margin-bottom:16px}
+  .snap-save-row{display:flex;gap:8px;margin-bottom:8px}
+  .snap-msg{font-size:12px;color:#2a6e5a;margin-bottom:8px;font-weight:500}
+  .snap-list{border-top:1px solid #e0dbd2;padding-top:10px;margin-top:4px}
+  .snap-list-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#999;margin-bottom:8px}
+  .snap-item{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #f0ece4}
+  .snap-item-name{font-weight:600;flex:1}
+  .snap-item-date{font-size:11px;color:#999}
+  .snap-empty{font-size:12px;color:#999;padding:8px 0}
+
+  .config-panel{background:#fff;border:1px solid #e0dbd2;border-radius:10px;padding:20px;margin-bottom:20px;display:flex;gap:32px;flex-wrap:wrap}
+  .config-section{flex:1 1 220px;min-width:220px}
+  .config-section-wide{flex:2 1 400px;min-width:300px}
+  .config-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#7a756a;margin-bottom:10px}
+  .config-hint{font-size:11px;color:#aaa;margin:-6px 0 10px}
+  .config-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .config-label{font-size:12px;color:#999}
+
+  .input{font-family:'Nunito',sans-serif;font-size:13px;border:1px solid #d0cbc2;border-radius:5px;padding:5px 8px;background:#FAF8F4;outline:none;color:#1a1a1a}
+  .input:focus{border-color:#999}
+  .input-narrow{width:120px}
+  .select-time{font-family:'Nunito',sans-serif;font-size:12px;border:1px solid #d0cbc2;border-radius:5px;padding:5px 6px;background:#FAF8F4;outline:none;color:#1a1a1a}
+  .duration-badge{font-size:11px;color:#2a6e5a;background:#e6f5f0;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  .color-picker{width:24px;height:24px;border:1px solid #d0cbc2;border-radius:4px;padding:0;cursor:pointer;flex-shrink:0;background:none;-webkit-appearance:none;appearance:none}
+  .color-picker::-webkit-color-swatch-wrapper{padding:1px}
+  .color-picker::-webkit-color-swatch{border:none;border-radius:3px}
+  .color-picker::-moz-color-swatch{border:none;border-radius:3px}
+  .color-dot-sm{width:10px;height:10px;border-radius:3px;flex-shrink:0;display:inline-block}
+
+  .paste-area{width:100%;min-height:56px;font-family:'Nunito',sans-serif;font-size:12px;border:1px dashed #c4bfb4;border-radius:6px;padding:8px;background:#faf8f4;outline:none;color:#1a1a1a;resize:vertical;margin-bottom:6px}
+  .paste-area:focus{border-color:#2a6e5a;border-style:solid}
+  .paste-preview{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#666;flex-wrap:wrap}
+  .paste-tag{background:#f0ece4;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+  .paste-tag-blue{background:#e3edf7;color:#3a6ea5}
+  .paste-tag-green{background:#e6f5f0;color:#2a6e5a}
+
+  .employee-list{display:flex;flex-direction:column;gap:6px}
+  .emp-card{display:flex;flex-direction:column;gap:4px}
+  .emp-card-top{display:flex;align-items:center;gap:6px}
+  .emp-name-input{flex:1;min-width:100px}
+  .emp-pref-input{font-size:12px;padding:4px 8px;margin-left:30px;color:#666;border-color:#e8e4dc}
+  .emp-pref-input:focus{color:#1a1a1a;border-color:#999}
+  .select-mo{font-family:'Nunito',sans-serif;font-size:11px;border:1px solid #d0cbc2;border-radius:4px;padding:3px 6px;background:#faf8f4;color:#666;outline:none;min-width:130px}
+
+  .edit-banner{background:#FFF3CD;border:1px solid #E8D5A0;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;font-weight:500;color:#856404}
+  .paint-banner{border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#E8F5E9;border:1px solid #A5D6A7}
+  .paint-palette{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .paint-chip{padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;border:2px solid transparent;font-weight:600;transition:all .1s;user-select:none}
+  .paint-chip:hover{opacity:.85}
+  .paint-chip-active{border-color:#1a1a1a!important;box-shadow:0 0 0 2px rgba(0,0,0,.12)}
+  .paint-chip-erase{background:#f0ece4;color:#666;border:2px dashed #ccc}
+  .paint-chip-erase.paint-chip-active{border-color:#c00!important;border-style:solid}
+
+  .grid-scroll{overflow-x:auto;border:1px solid #d0cbc2;border-radius:10px;background:#fff;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse;min-width:950px}
+  th{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px;background:#F0EDE6;color:#5a5548;text-align:center;border-bottom:2px solid #d0cbc2;position:sticky;top:0;z-index:10}
+  th.sticky-shift{position:sticky;left:0;z-index:12;width:100px}
+  th.sticky-loc{position:sticky;left:100px;z-index:12;width:70px}
+  td.sticky-shift{position:sticky;left:0;z-index:6}
+  td.sticky-loc{position:sticky;left:100px;z-index:5}
+  td.shift-label{padding:8px 10px;text-align:center;font-size:13px;vertical-align:middle}
+  .shift-label-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .shift-time{font-size:10px;color:#7a756a;white-space:nowrap;font-variant-numeric:tabular-nums}
+  td.loc-label{font-size:13px;font-weight:600;padding:8px 10px;text-align:center}
+  td.cell{padding:4px 6px;text-align:center;vertical-align:middle}
+  .shift-group-first td{border-top:3px solid #c4bfb4}
+  .cell-select{width:100%;font-family:'Nunito',sans-serif;font-size:12px;border:1px solid #d0cbc2;border-radius:5px;padding:5px 4px;background:#fff;outline:none;cursor:pointer;text-align:center;text-align-last:center}
+  .paint-cell{cursor:pointer;min-height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:background .1s;user-select:none;padding:5px 4px}
+  .paint-cell:hover{filter:brightness(.92)}
+
+  .stats-panel{background:#fff;border:1px solid #d0cbc2;border-radius:10px;padding:20px;overflow-x:auto}
+  .stats-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+  .stats-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#7a756a}
+  .stats-scroll{overflow-x:auto}
+  .stats-header{display:flex;border-bottom:2px solid #d0cbc2;padding-bottom:6px;margin-bottom:4px;min-width:500px}
+  .stats-row{display:flex;padding:6px 0;border-bottom:1px solid #f0ece4;align-items:center;min-width:500px}
+  .stats-cell{font-family:'Nunito',sans-serif;font-size:13px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+  .stats-name{flex:0 0 150px;min-width:120px}
+  .stats-mo{flex:0 0 140px;justify-content:center}
+  .stats-num{flex:0 0 80px;justify-content:center;text-align:center}
+  .stats-bold{font-weight:700}
+  .stats-hours{font-weight:700;color:#2a6e5a}
+  .stats-pref{flex:1 1 200px;min-width:150px}
+  .stats-pref-text{font-size:12px;color:#777;line-height:1.3}
+  .mo-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+  .mo-badge.mo-ma{background:#FFF8E7;color:#9a7b2d;border:1px solid #E8D5A0}
+  .mo-badge.mo-ac{background:#ECEEFF;color:#5558a0;border:1px solid #A8ABE8}
+
+  /* Modal */
+  .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:#FAF8F4;border-radius:12px;padding:24px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .modal-title{font-size:18px;font-weight:700}
+  .modal-controls{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+
+  /* Solo worker */
+  .solo-container{background:#fff;border:1px solid #d0cbc2;border-radius:10px;overflow:hidden}
+  .solo-header{padding:16px 20px;background:#FAFAF7;border-bottom:1px solid #e0dbd2}
+  .solo-name{font-size:20px;font-weight:700}
+  .solo-subtitle{font-size:12px;color:#999;margin-top:2px}
+  .solo-table{width:100%;border-collapse:collapse}
+  .solo-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;background:#F0EDE6;color:#5a5548;text-align:left;border-bottom:2px solid #d0cbc2;position:static}
+  .solo-table td{padding:8px 12px;border-bottom:1px solid #f0ece4;font-size:13px}
+  .solo-time{font-variant-numeric:tabular-nums;font-size:12px;color:#777}
+  .solo-footer{padding:12px 20px;background:#FAFAF7;border-top:1px solid #e0dbd2;font-size:13px;font-weight:600;color:#555}
+  .solo-empty{padding:24px;text-align:center;color:#999}
+
+  /* Export table (hidden, for PNG capture) */
+  .export-container{width:1100px;padding:24px;background:#FAF8F4;font-family:'Nunito',sans-serif}
+  .export-header{margin-bottom:16px}
+  .export-title{font-size:18px;font-weight:700}
+  .export-date{font-size:12px;color:#999;margin-top:4px}
+  .export-table{width:100%;border-collapse:collapse;border:1px solid #d0cbc2;border-radius:8px;overflow:hidden;table-layout:fixed}
+  .export-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:8px;background:#F0EDE6;color:#5a5548;text-align:center;border-bottom:2px solid #d0cbc2}
+  .export-table td{border-right:1px solid #e8e4dc}
+
+  @media(max-width:700px){
+    .root{padding:12px}
+    .config-panel{flex-direction:column;gap:16px}
+    .header{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef
+} = React;
+const DAYS = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const DAY_ABBR = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+const COLORS = ["#2EC4B6", "#E84855", "#F9C22E", "#7FB3D3", "#9B8FBB", "#FF8C42", "#F4ACB7", "#3A86FF", "#FFDD57", "#06D6A0", "#E056A0", "#5E60CE"];
+const STORE = "shift-scheduler-v5";
+const SETTINGS_STORE = "shift-scheduler-settings";
+const D_SHIFTS = [{
+  id: "s1",
+  name: "Morning",
+  start: "07:30",
+  end: "13:45"
+}, {
+  id: "s2",
+  name: "Afternoon",
+  start: "13:45",
+  end: "20:00"
+}, {
+  id: "s3",
+  name: "Closing",
+  start: "20:00",
+  end: "02:15"
+}];
+const D_LOCS = [{
+  id: "l1",
+  name: "150-1"
+}, {
+  id: "l2",
+  name: "150-2"
+}, {
+  id: "l3",
+  name: "160A"
+}, {
+  id: "l4",
+  name: "160B"
+}];
+const D_EMP = Array.from({
+  length: 12
+}, (_, i) => ({
+  id: `e${i}`,
+  name: "",
+  color: COLORS[i],
+  pref: "",
+  shiftPref: ""
+}));
+function t2m(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+function dur(a, b) {
+  let s = t2m(a),
+    e = t2m(b);
+  if (e <= s) e += 1440;
+  return (e - s) / 60;
+}
+function fmtDur(h) {
+  const hr = Math.floor(h),
+    mn = Math.round((h - hr) * 60);
+  return mn > 0 ? `${hr}h ${mn}m` : `${hr}h`;
+}
+function genTimes() {
+  const o = [];
+  for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 15) {
+    const v = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    o.push({
+      v,
+      l: `${h12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`
+    });
+  }
+  return o;
+}
+const TIMES = genTimes();
+function uid() {
+  return Math.random().toString(36).slice(2, 8);
+}
+function tl(t) {
+  return TIMES.find(o => o.v === t)?.l || t;
+}
+function load(key) {
+  try {
+    const d = localStorage.getItem(key);
+    if (d) return JSON.parse(d);
+  } catch (e) {}
+  return null;
+}
+function save(key, d) {
+  try {
+    localStorage.setItem(key, JSON.stringify(d));
+  } catch (e) {}
+}
+function parsePaste(text) {
+  const lines = text.split(/\r?\n/).filter(s => s.trim());
+  if (!lines.length) return [];
+  const hasTabsInMost = lines.filter(l => l.includes("\t")).length > lines.length * 0.3;
+  if (!hasTabsInMost) return lines.slice(0, 12).map(l => ({
+    name: l.trim(),
+    shiftPref: "",
+    pref: ""
+  }));
+  const rows = lines.map(l => l.split("\t").map(c => c.trim()));
+  const firstRow = rows[0].map(c => c.toLowerCase());
+  const headerKeywords = ["name", "responded", "m/o", "m/c", "preference", "pref", "shift", "notes"];
+  const isHeader = firstRow.some(c => headerKeywords.some(k => c.includes(k)));
+  const dataRows = isHeader ? rows.slice(1) : rows;
+  let nameCol = 0,
+    moCol = -1,
+    prefCol = -1;
+  if (isHeader) {
+    firstRow.forEach((c, i) => {
+      if (c.includes("name")) nameCol = i;else if (c === "m/o" || c === "m/c" || c.includes("shift type") || c === "mo") moCol = i;else if (c.includes("pref") || c.includes("notes")) prefCol = i;
+    });
+  }
+  if (moCol === -1 || prefCol === -1) {
+    const moPatterns = /^(mornings?|overnights?|afternoons?|closing)$/i;
+    const boolPatterns = /^(true|false|yes|no|✓|☑|☐)$/i;
+    if (dataRows.length > 0) {
+      const numCols = Math.max(...dataRows.map(r => r.length));
+      for (let ci = 0; ci < numCols; ci++) {
+        const vals = dataRows.map(r => r[ci] || "").filter(Boolean);
+        if (ci === nameCol) continue;
+        if (moCol === -1 && vals.some(v => moPatterns.test(v))) {
+          moCol = ci;
+          continue;
+        }
+        if (vals.every(v => boolPatterns.test(v) || !v)) continue;
+        if (prefCol === -1) {
+          const avgLen = vals.reduce((a, v) => a + v.length, 0) / (vals.length || 1);
+          if (avgLen > 15) prefCol = ci;
+        }
+      }
+      if (prefCol === -1) {
+        for (let ci = numCols - 1; ci >= 0; ci--) {
+          if (ci === nameCol || ci === moCol) continue;
+          const vals = dataRows.map(r => r[ci] || "").filter(Boolean);
+          if (vals.every(v => boolPatterns.test(v) || !v)) continue;
+          if (vals.length > 0) {
+            prefCol = ci;
+            break;
+          }
+        }
+      }
+    }
+  }
+  return dataRows.slice(0, 12).map(row => ({
+    name: (row[nameCol] || "").trim(),
+    shiftPref: moCol >= 0 ? (row[moCol] || "").trim().replace(/^(mornings?|morning)$/i, "Morning/Afternoon").replace(/^(overnights?|closing)$/i, "Afternoon/Closing").replace(/^afternoons?$/i, "Morning/Afternoon") : "",
+    pref: prefCol >= 0 ? (row[prefCol] || "").trim() : ""
+  })).filter(r => r.name);
+}
+
+// --- PNG Export ---
+async function captureElement(el, filename) {
+  if (typeof html2canvas === "undefined") {
+    alert("html2canvas not loaded yet. Try again.");
+    return;
+  }
+  const canvas = await html2canvas(el, {
+    backgroundColor: "#FAF8F4",
+    scale: 2,
+    useCORS: true,
+    logging: false
+  });
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+// --- GitHub Snapshot API ---
+async function apiCall(workerUrl, method, path, body) {
+  const res = await fetch(`${workerUrl}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`${res.status}: ${t}`);
+  }
+  return res.json();
+}
+function App() {
+  const sv = useMemo(() => load(STORE), []);
+  const settings = useMemo(() => load(SETTINGS_STORE) || {}, []);
+  const [shifts, setShifts] = useState(sv?.shifts || D_SHIFTS);
+  const [locs, setLocs] = useState(sv?.locs || D_LOCS);
+  const [emps, setEmps] = useState(() => {
+    if (sv?.emps) return sv.emps.map(e => ({
+      pref: "",
+      shiftPref: "",
+      ...e
+    }));
+    return D_EMP;
+  });
+  const [sched, setSched] = useState(sv?.sched || {});
+  const [off, setOff] = useState(new Set(sv?.off || []));
+  const [cfgOpen, setCfgOpen] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [paintMode, setPaintMode] = useState(false);
+  const [paintId, setPaintId] = useState(null);
+  const [paste, setPaste] = useState("");
+  const [showPrefs, setShowPrefs] = useState(true);
+
+  // Snapshot state
+  const [workerUrl, setWorkerUrl] = useState(settings.workerUrl || "");
+  const [snapshots, setSnapshots] = useState([]);
+  const [snapName, setSnapName] = useState("");
+  const [snapLoading, setSnapLoading] = useState(false);
+  const [snapMsg, setSnapMsg] = useState("");
+  const [showSnapPanel, setShowSnapPanel] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Solo worker state
+  const [soloId, setSoloId] = useState(null);
+  const [showSolo, setShowSolo] = useState(false);
+
+  // Refs for export
+  const gridRef = useRef(null);
+  const soloRef = useRef(null);
+  const exportRef = useRef(null);
+  useEffect(() => {
+    save(STORE, {
+      shifts,
+      locs,
+      emps,
+      sched,
+      off: [...off]
+    });
+  }, [shifts, locs, emps, sched, off]);
+  useEffect(() => {
+    save(SETTINGS_STORE, {
+      workerUrl
+    });
+  }, [workerUrl]);
+  const active = useMemo(() => emps.filter(e => e.name.trim()), [emps]);
+  const sk = (d, s, l) => `${d}|${s}|${l}`;
+  const dk = (s, l, d) => `${s}|${l}|${d}`;
+  const assign = useCallback((d, s, l, eid) => setSched(p => ({
+    ...p,
+    [sk(d, s, l)]: eid || null
+  })), []);
+  const togOff = useCallback((s, l, d) => {
+    const k = dk(s, l, d);
+    setOff(p => {
+      const n = new Set(p);
+      if (n.has(k)) n.delete(k);else {
+        n.add(k);
+        setSched(sc => {
+          const c = {
+            ...sc
+          };
+          delete c[sk(d, s, l)];
+          return c;
+        });
+      }
+      return n;
+    });
+  }, []);
+  const paintClick = useCallback((di, si, li) => {
+    if (paintId === null) setSched(p => {
+      const c = {
+        ...p
+      };
+      delete c[sk(di, si, li)];
+      return c;
+    });else setSched(p => {
+      const key = sk(di, si, li);
+      if (p[key] === paintId) {
+        const c = {
+          ...p
+        };
+        delete c[key];
+        return c;
+      }
+      return {
+        ...p,
+        [key]: paintId
+      };
+    });
+  }, [paintId]);
+  const stats = useMemo(() => {
+    const o = {};
+    active.forEach(e => {
+      o[e.id] = {
+        h: 0,
+        by: {}
+      };
+      shifts.forEach(s => {
+        o[e.id].by[s.id] = 0;
+      });
+    });
+    DAYS.forEach((_, di) => shifts.forEach(s => {
+      const d = dur(s.start, s.end);
+      locs.forEach(l => {
+        if (off.has(dk(s.id, l.id, di))) return;
+        const eid = sched[sk(di, s.id, l.id)];
+        if (eid && o[eid]) {
+          o[eid].h += d;
+          o[eid].by[s.id]++;
+        }
+      });
+    }));
+    return o;
+  }, [sched, shifts, locs, active, off]);
+  const uShift = (id, f, v) => setShifts(p => p.map(s => s.id === id ? {
+    ...s,
+    [f]: v
+  } : s));
+  const uLoc = (id, n) => setLocs(p => p.map(l => l.id === id ? {
+    ...l,
+    name: n
+  } : l));
+  const addLoc = () => {
+    if (locs.length < 6) setLocs(p => [...p, {
+      id: `l${uid()}`,
+      name: `Loc ${p.length + 1}`
+    }]);
+  };
+  const rmLoc = id => {
+    setLocs(p => p.filter(l => l.id !== id));
+    setSched(p => {
+      const c = {
+        ...p
+      };
+      Object.keys(c).forEach(k => {
+        if (k.includes(`|${id}`)) delete c[k];
+      });
+      return c;
+    });
+  };
+  const moveLoc = (idx, dir) => {
+    setLocs(p => {
+      const n = [...p];
+      const ni = idx + dir;
+      if (ni < 0 || ni >= n.length) return p;
+      [n[idx], n[ni]] = [n[ni], n[idx]];
+      return n;
+    });
+  };
+  const uEmp = (id, field, val) => setEmps(p => p.map(e => e.id === id ? {
+    ...e,
+    [field]: val
+  } : e));
+  const clearAll = () => {
+    if (confirm("Clear all assignments?")) setSched({});
+  };
+  const clearEmps = () => {
+    if (confirm("Clear all employee data? This will reset names, preferences, and remove all assignments.")) {
+      setEmps(D_EMP);
+      setSched({});
+    }
+  };
+  const doPaste = () => {
+    const parsed = parsePaste(paste);
+    if (!parsed.length) return;
+    setEmps(p => {
+      const n = [...p];
+      parsed.forEach((r, i) => {
+        if (i < n.length) n[i] = {
+          ...n[i],
+          name: r.name,
+          pref: r.pref || n[i].pref,
+          shiftPref: r.shiftPref || n[i].shiftPref
+        };
+      });
+      return n;
+    });
+    setPaste("");
+  };
+  const pastePreview = useMemo(() => {
+    if (!paste.trim()) return null;
+    const parsed = parsePaste(paste);
+    return {
+      count: parsed.length,
+      hasCols: paste.includes("\t"),
+      hasPrefs: parsed.some(r => r.pref),
+      hasMO: parsed.some(r => r.shiftPref)
+    };
+  }, [paste]);
+  const togPaint = () => {
+    if (paintMode) {
+      setPaintMode(false);
+      setPaintId(null);
+    } else {
+      setPaintMode(true);
+      setPaintId(null);
+    }
+  };
+
+  // --- Snapshot functions ---
+  const getState = () => ({
+    shifts,
+    locs,
+    emps,
+    sched,
+    off: [...off]
+  });
+  const loadState = data => {
+    if (data.shifts) setShifts(data.shifts);
+    if (data.locs) setLocs(data.locs);
+    if (data.emps) setEmps(data.emps.map(e => ({
+      pref: "",
+      shiftPref: "",
+      ...e
+    })));
+    if (data.sched) setSched(data.sched);
+    if (data.off) setOff(new Set(data.off));
+  };
+  const listSnapshots = async () => {
+    if (!workerUrl) {
+      setSnapMsg("Set worker URL in settings first");
+      return;
+    }
+    setSnapLoading(true);
+    setSnapMsg("");
+    try {
+      const data = await apiCall(workerUrl, "GET", "/snapshots");
+      setSnapshots(data.files || []);
+    } catch (e) {
+      setSnapMsg(`Error: ${e.message}`);
+    }
+    setSnapLoading(false);
+  };
+  const saveSnapshot = async () => {
+    if (!workerUrl) {
+      setSnapMsg("Set worker URL in settings first");
+      return;
+    }
+    if (!snapName.trim()) {
+      setSnapMsg("Enter a snapshot name");
+      return;
+    }
+    setSnapLoading(true);
+    setSnapMsg("");
+    try {
+      const state = getState();
+      state.savedAt = new Date().toISOString();
+      state.name = snapName.trim();
+      await apiCall(workerUrl, "PUT", `/snapshot/${encodeURIComponent(snapName.trim())}`, state);
+      setSnapMsg(`Saved "${snapName.trim()}"`);
+      setSnapName("");
+      await listSnapshots();
+    } catch (e) {
+      setSnapMsg(`Error: ${e.message}`);
+    }
+    setSnapLoading(false);
+  };
+  const loadSnapshot = async name => {
+    if (!workerUrl) return;
+    setSnapLoading(true);
+    setSnapMsg("");
+    try {
+      const data = await apiCall(workerUrl, "GET", `/snapshot/${encodeURIComponent(name)}`);
+      loadState(data);
+      setSnapMsg(`Loaded "${name}"`);
+    } catch (e) {
+      setSnapMsg(`Error: ${e.message}`);
+    }
+    setSnapLoading(false);
+  };
+
+  // --- Export functions ---
+  const exportSchedule = async () => {
+    if (!exportRef.current) return;
+    exportRef.current.style.display = "block";
+    await new Promise(r => setTimeout(r, 100));
+    await captureElement(exportRef.current, "schedule-export.png");
+    exportRef.current.style.display = "none";
+  };
+  const exportSolo = async () => {
+    if (!soloRef.current) return;
+    await new Promise(r => setTimeout(r, 100));
+    const emp = emps.find(e => e.id === soloId);
+    const fname = emp ? `${emp.name.replace(/\s+/g, "-").toLowerCase()}-schedule.png` : "worker-schedule.png";
+    await captureElement(soloRef.current, fname);
+  };
+  const B = [{
+    bg: "#FFF8E7",
+    bd: "#E8D5A0",
+    hd: "#F5E6B8"
+  }, {
+    bg: "#FFF0EC",
+    bd: "#E8B8A8",
+    hd: "#F5D5C8"
+  }, {
+    bg: "#ECEEFF",
+    bd: "#A8ABE8",
+    hd: "#C8CBF5"
+  }];
+
+  // Solo worker data
+  const soloEmp = emps.find(e => e.id === soloId);
+  const soloShifts = useMemo(() => {
+    if (!soloId) return [];
+    const result = [];
+    DAYS.forEach((day, di) => {
+      shifts.forEach(sh => {
+        locs.forEach(loc => {
+          if (off.has(dk(sh.id, loc.id, di))) return;
+          if (sched[sk(di, sh.id, loc.id)] === soloId) {
+            result.push({
+              day,
+              dayAbbr: DAY_ABBR[di],
+              shift: sh.name,
+              loc: loc.name,
+              shiftId: sh.id,
+              dur: dur(sh.start, sh.end),
+              start: tl(sh.start),
+              end: tl(sh.end)
+            });
+          }
+        });
+      });
+    });
+    return result;
+  }, [soloId, sched, shifts, locs, off]);
+
+  // --- Render helper: export-only schedule table ---
+  const renderExportTable = () => /*#__PURE__*/React.createElement("div", {
+    ref: exportRef,
+    className: "export-container",
+    style: {
+      display: "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "export-header"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "export-title"
+  }, "Studio Operations \u2014 Shift Schedule"), /*#__PURE__*/React.createElement("p", {
+    className: "export-date"
+  }, "Generated ", new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  }))), /*#__PURE__*/React.createElement("table", {
+    className: "export-table",
+    cellSpacing: 0,
+    cellPadding: 0
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Shift"), /*#__PURE__*/React.createElement("th", null, "Loc"), DAYS.map((d, i) => /*#__PURE__*/React.createElement("th", {
+    key: i
+  }, d)))), /*#__PURE__*/React.createElement("tbody", null, shifts.map((sh, si) => {
+    const c = B[si % B.length];
+    return locs.map((loc, li) => {
+      const isFirst = li === 0;
+      const isLast = li === locs.length - 1;
+      const bb = isLast ? `3px solid ${c.bd}` : `1px solid ${c.bd}`;
+      return /*#__PURE__*/React.createElement("tr", {
+        key: `${sh.id}-${loc.id}`
+      }, isFirst && /*#__PURE__*/React.createElement("td", {
+        rowSpan: locs.length,
+        style: {
+          background: c.hd,
+          borderBottom: `3px solid ${c.bd}`,
+          textAlign: "center",
+          fontWeight: 700,
+          fontSize: 13,
+          padding: 8
+        }
+      }, sh.name, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 10,
+          fontWeight: 400,
+          color: "#7a756a"
+        }
+      }, tl(sh.start), "\u2013", tl(sh.end))), /*#__PURE__*/React.createElement("td", {
+        style: {
+          background: c.bg,
+          borderBottom: bb,
+          textAlign: "center",
+          fontWeight: 600,
+          fontSize: 12,
+          padding: 6
+        }
+      }, loc.name), DAYS.map((_, di) => {
+        const isOff = off.has(dk(sh.id, loc.id, di));
+        if (isOff) return /*#__PURE__*/React.createElement("td", {
+          key: di,
+          style: {
+            background: "#2a2a2a",
+            borderBottom: bb
+          }
+        });
+        const val = sched[sk(di, sh.id, loc.id)] || "";
+        const emp = active.find(e => e.id === val);
+        return /*#__PURE__*/React.createElement("td", {
+          key: di,
+          style: {
+            background: emp ? `${emp.color}25` : c.bg,
+            borderBottom: bb,
+            textAlign: "center",
+            fontSize: 12,
+            fontWeight: emp ? 600 : 400,
+            padding: 6,
+            color: emp ? "#1a1a1a" : "#ccc"
+          }
+        }, emp ? emp.name : "—");
+      }));
+    });
+  }))));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "root"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
+    className: "title"
+  }, "Shift Scheduler"), /*#__PURE__*/React.createElement("p", {
+    className: "subtitle"
+  }, "Studio Operations")), /*#__PURE__*/React.createElement("div", {
+    className: "header-btns"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: `btn-secondary${paintMode ? " btn-active" : ""}`,
+    onClick: togPaint
+  }, paintMode ? "Exit Paint" : "Paint Mode"), /*#__PURE__*/React.createElement("button", {
+    className: `btn-secondary${editMode ? " btn-active" : ""}`,
+    onClick: () => setEditMode(p => !p)
+  }, editMode ? "Done Editing" : "Edit Slots"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-secondary",
+    onClick: clearAll
+  }, "Clear Shifts"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-secondary",
+    onClick: clearEmps
+  }, "Clear Employees"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-primary",
+    onClick: () => setCfgOpen(p => !p)
+  }, cfgOpen ? "Hide Config" : "Show Config"))), /*#__PURE__*/React.createElement("div", {
+    className: "toolbar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "toolbar-left"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: `btn-tool${showSnapPanel ? " btn-tool-active" : ""}`,
+    onClick: () => {
+      setShowSnapPanel(p => !p);
+      if (!showSnapPanel && workerUrl) listSnapshots();
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tool-icon"
+  }, "\uD83D\uDCBE"), " Snapshots"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-tool",
+    onClick: exportSchedule
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tool-icon"
+  }, "\uD83D\uDCF7"), " Export Schedule"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-tool",
+    onClick: () => {
+      if (active.length) {
+        setSoloId(active[0].id);
+        setShowSolo(true);
+      } else alert("Add employees first");
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tool-icon"
+  }, "\uD83D\uDC64"), " Solo Worker View")), /*#__PURE__*/React.createElement("button", {
+    className: "btn-tool btn-tool-settings",
+    onClick: () => setShowSettings(p => !p)
+  }, "\u2699\uFE0F")), showSettings && /*#__PURE__*/React.createElement("div", {
+    className: "settings-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "config-title"
+  }, "GitHub Sync Settings"), /*#__PURE__*/React.createElement("div", {
+    className: "config-row"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "config-label",
+    style: {
+      minWidth: 80
+    }
+  }, "Worker URL"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    style: {
+      flex: 1
+    },
+    value: workerUrl,
+    onChange: e => setWorkerUrl(e.target.value),
+    placeholder: "https://your-worker.your-subdomain.workers.dev"
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "config-hint",
+    style: {
+      margin: "4px 0 0"
+    }
+  }, "Your Cloudflare Worker URL for GitHub snapshot storage")), showSnapPanel && /*#__PURE__*/React.createElement("div", {
+    className: "snap-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "snap-save-row"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    style: {
+      flex: 1
+    },
+    value: snapName,
+    onChange: e => setSnapName(e.target.value),
+    placeholder: "Snapshot name (e.g. Fall 2026 Week 3)"
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "btn-primary btn-sm",
+    onClick: saveSnapshot,
+    disabled: snapLoading
+  }, "Save")), snapMsg && /*#__PURE__*/React.createElement("div", {
+    className: "snap-msg"
+  }, snapMsg), snapshots.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "snap-list"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "snap-list-title"
+  }, "Saved Snapshots"), snapshots.map(s => /*#__PURE__*/React.createElement("div", {
+    key: s.name,
+    className: "snap-item"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "snap-item-name"
+  }, s.name.replace(/\.json$/, "")), s.savedAt && /*#__PURE__*/React.createElement("span", {
+    className: "snap-item-date"
+  }, new Date(s.savedAt).toLocaleDateString()), /*#__PURE__*/React.createElement("button", {
+    className: "btn-secondary btn-sm",
+    onClick: () => loadSnapshot(s.name.replace(/\.json$/, "")),
+    disabled: snapLoading
+  }, "Load")))), snapshots.length === 0 && workerUrl && !snapLoading && /*#__PURE__*/React.createElement("div", {
+    className: "snap-empty"
+  }, "No snapshots saved yet"), snapLoading && /*#__PURE__*/React.createElement("div", {
+    className: "snap-empty"
+  }, "Loading...")), showSolo && soloEmp && /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: () => setShowSolo(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-header"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "modal-title"
+  }, "Solo Worker View"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-remove",
+    onClick: () => setShowSolo(false)
+  }, "\xD7")), /*#__PURE__*/React.createElement("div", {
+    className: "modal-controls"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "input",
+    value: soloId || "",
+    onChange: e => {
+      setSoloId(e.target.value);
+    }
+  }, active.map(a => /*#__PURE__*/React.createElement("option", {
+    key: a.id,
+    value: a.id
+  }, a.name))), /*#__PURE__*/React.createElement("button", {
+    className: "btn-primary btn-sm",
+    onClick: exportSolo
+  }, "Export PNG")), /*#__PURE__*/React.createElement("div", {
+    ref: soloRef,
+    className: "solo-container"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "solo-header",
+    style: {
+      borderLeft: `4px solid ${soloEmp.color}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "solo-name"
+  }, soloEmp.name), /*#__PURE__*/React.createElement("div", {
+    className: "solo-subtitle"
+  }, "Shift Schedule")), soloShifts.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "solo-empty"
+  }, "No shifts assigned") : /*#__PURE__*/React.createElement("table", {
+    className: "solo-table",
+    cellSpacing: 0,
+    cellPadding: 0
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Day"), /*#__PURE__*/React.createElement("th", null, "Shift"), /*#__PURE__*/React.createElement("th", null, "Time"), /*#__PURE__*/React.createElement("th", null, "Location"))), /*#__PURE__*/React.createElement("tbody", null, soloShifts.map((s, i) => {
+    const c = B[shifts.findIndex(sh => sh.name === s.shift) % B.length];
+    return /*#__PURE__*/React.createElement("tr", {
+      key: i
+    }, /*#__PURE__*/React.createElement("td", null, s.day), /*#__PURE__*/React.createElement("td", {
+      style: {
+        background: c?.hd || "#f5f5f5"
+      }
+    }, s.shift), /*#__PURE__*/React.createElement("td", {
+      className: "solo-time"
+    }, s.start, "\u2013", s.end), /*#__PURE__*/React.createElement("td", null, s.loc));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "solo-footer"
+  }, soloShifts.length, " shift", soloShifts.length !== 1 ? "s" : "", " \xB7 ", fmtDur(soloShifts.reduce((a, s) => a + s.dur, 0)))))), cfgOpen && /*#__PURE__*/React.createElement("div", {
+    className: "config-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "config-section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "config-title"
+  }, "Shifts & Times"), /*#__PURE__*/React.createElement("div", {
+    className: "config-hint"
+  }, "All locations share these times \xB7 15-min increments"), shifts.map(s => /*#__PURE__*/React.createElement("div", {
+    key: s.id,
+    className: "config-row"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "input input-narrow",
+    value: s.name,
+    onChange: e => uShift(s.id, "name", e.target.value),
+    placeholder: "Shift name"
+  }), /*#__PURE__*/React.createElement("select", {
+    className: "select-time",
+    value: s.start,
+    onChange: e => uShift(s.id, "start", e.target.value)
+  }, TIMES.map(o => /*#__PURE__*/React.createElement("option", {
+    key: o.v,
+    value: o.v
+  }, o.l))), /*#__PURE__*/React.createElement("span", {
+    className: "config-label"
+  }, "to"), /*#__PURE__*/React.createElement("select", {
+    className: "select-time",
+    value: s.end,
+    onChange: e => uShift(s.id, "end", e.target.value)
+  }, TIMES.map(o => /*#__PURE__*/React.createElement("option", {
+    key: o.v,
+    value: o.v
+  }, o.l))), /*#__PURE__*/React.createElement("span", {
+    className: "duration-badge"
+  }, fmtDur(dur(s.start, s.end)))))), /*#__PURE__*/React.createElement("div", {
+    className: "config-section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "config-title"
+  }, "Locations"), locs.map((l, i) => /*#__PURE__*/React.createElement("div", {
+    key: l.id,
+    className: "config-row"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "input input-narrow",
+    value: l.name,
+    onChange: e => uLoc(l.id, e.target.value)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "loc-arrows"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn-arrow",
+    disabled: i === 0,
+    onClick: () => moveLoc(i, -1)
+  }, "\u25B2"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-arrow",
+    disabled: i === locs.length - 1,
+    onClick: () => moveLoc(i, 1)
+  }, "\u25BC")), locs.length > 1 && /*#__PURE__*/React.createElement("button", {
+    className: "btn-remove",
+    onClick: () => rmLoc(l.id)
+  }, "\xD7"))), locs.length < 6 && /*#__PURE__*/React.createElement("button", {
+    className: "btn-add",
+    onClick: addLoc
+  }, "+ Add Location")), /*#__PURE__*/React.createElement("div", {
+    className: "config-section config-section-wide"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "config-title"
+  }, "Employees (up to 12)"), /*#__PURE__*/React.createElement("textarea", {
+    className: "paste-area",
+    placeholder: "Paste names here — one per line, or copy columns from a spreadsheet (Name, M/C, Preferences)…",
+    value: paste,
+    onChange: e => setPaste(e.target.value),
+    rows: 3
+  }), pastePreview && /*#__PURE__*/React.createElement("div", {
+    className: "paste-preview"
+  }, /*#__PURE__*/React.createElement("span", null, pastePreview.count, " name", pastePreview.count !== 1 ? "s" : "", " detected"), pastePreview.hasCols && /*#__PURE__*/React.createElement("span", {
+    className: "paste-tag"
+  }, "Multi-column"), pastePreview.hasMO && /*#__PURE__*/React.createElement("span", {
+    className: "paste-tag paste-tag-blue"
+  }, "M/C preferences"), pastePreview.hasPrefs && /*#__PURE__*/React.createElement("span", {
+    className: "paste-tag paste-tag-green"
+  }, "Scheduling preferences"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-secondary btn-sm",
+    onClick: doPaste
+  }, "Apply")), /*#__PURE__*/React.createElement("div", {
+    className: "employee-list"
+  }, emps.map(e => /*#__PURE__*/React.createElement("div", {
+    key: e.id,
+    className: "emp-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "emp-card-top"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "color",
+    className: "color-picker",
+    value: e.color,
+    onChange: ev => uEmp(e.id, "color", ev.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    className: "input emp-name-input",
+    value: e.name,
+    onChange: ev => uEmp(e.id, "name", ev.target.value),
+    placeholder: "Name"
+  }), e.name.trim() && /*#__PURE__*/React.createElement("select", {
+    className: "select-mo",
+    value: e.shiftPref,
+    onChange: ev => uEmp(e.id, "shiftPref", ev.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u2014"), /*#__PURE__*/React.createElement("option", {
+    value: "Morning/Afternoon"
+  }, "Morning/Afternoon"), /*#__PURE__*/React.createElement("option", {
+    value: "Afternoon/Closing"
+  }, "Afternoon/Closing"))), e.name.trim() && /*#__PURE__*/React.createElement("input", {
+    className: "input emp-pref-input",
+    value: e.pref,
+    onChange: ev => uEmp(e.id, "pref", ev.target.value),
+    placeholder: "Scheduling preferences\u2026"
+  })))))), editMode && /*#__PURE__*/React.createElement("div", {
+    className: "edit-banner"
+  }, paintMode ? "Paint + Edit: click enabled cells to assign, click disabled cells to re-enable. Right-click enabled cells to disable." : "Click any cell to toggle it on/off. Disabled cells won't accept assignments."), paintMode && /*#__PURE__*/React.createElement("div", {
+    className: "paint-banner"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#2a6e5a"
+    }
+  }, "Select an employee, then click cells to assign:"), /*#__PURE__*/React.createElement("div", {
+    className: "paint-palette"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `paint-chip paint-chip-erase${paintId === null ? " paint-chip-active" : ""}`,
+    onClick: () => setPaintId(null)
+  }, "\u2715 Erase"), active.map(a => /*#__PURE__*/React.createElement("div", {
+    key: a.id,
+    className: `paint-chip${paintId === a.id ? " paint-chip-active" : ""}`,
+    style: {
+      background: `${a.color}30`,
+      color: "#1a1a1a"
+    },
+    onClick: () => setPaintId(a.id)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "color-dot-sm",
+    style: {
+      background: a.color,
+      marginRight: 4
+    }
+  }), a.name)))), /*#__PURE__*/React.createElement("div", {
+    className: "grid-scroll",
+    ref: gridRef
+  }, /*#__PURE__*/React.createElement("table", {
+    cellSpacing: 0,
+    cellPadding: 0
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    className: "sticky-shift",
+    style: {
+      width: 100
+    }
+  }, "Shift"), /*#__PURE__*/React.createElement("th", {
+    className: "sticky-loc",
+    style: {
+      width: 70
+    }
+  }, "Loc"), DAYS.map((d, i) => /*#__PURE__*/React.createElement("th", {
+    key: i,
+    style: {
+      minWidth: 130
+    }
+  }, d)))), /*#__PURE__*/React.createElement("tbody", null, shifts.map((sh, si) => {
+    const c = B[si % B.length];
+    return locs.map((loc, li) => {
+      const isFirst = li === 0;
+      const isLast = li === locs.length - 1;
+      const bb = isLast ? `3px solid ${c.bd}` : `1px solid ${c.bd}`;
+      return /*#__PURE__*/React.createElement("tr", {
+        key: `${sh.id}-${loc.id}`,
+        className: isFirst ? "shift-group-first" : ""
+      }, isFirst && /*#__PURE__*/React.createElement("td", {
+        className: "shift-label sticky-shift",
+        rowSpan: locs.length,
+        style: {
+          background: c.hd,
+          borderBottom: `3px solid ${c.bd}`
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "shift-label-inner"
+      }, /*#__PURE__*/React.createElement("strong", null, sh.name), /*#__PURE__*/React.createElement("span", {
+        className: "shift-time"
+      }, tl(sh.start), "\u2013", tl(sh.end)))), /*#__PURE__*/React.createElement("td", {
+        className: "loc-label sticky-loc",
+        style: {
+          background: c.bg,
+          borderBottom: bb
+        }
+      }, loc.name), DAYS.map((_, di) => {
+        const isOff = off.has(dk(sh.id, loc.id, di));
+        const key = sk(di, sh.id, loc.id);
+        const val = sched[key] || "";
+        const emp = active.find(e => e.id === val);
+        if (editMode && !paintMode) return /*#__PURE__*/React.createElement("td", {
+          key: di,
+          className: "cell",
+          style: {
+            background: isOff ? "#2a2a2a" : c.bg,
+            borderBottom: bb,
+            cursor: "pointer"
+          },
+          onClick: () => togOff(sh.id, loc.id, di)
+        }, isOff ? /*#__PURE__*/React.createElement("span", {
+          style: {
+            color: "#666",
+            fontSize: 11
+          }
+        }, "OFF") : null);
+        if (editMode && paintMode) {
+          if (isOff) return /*#__PURE__*/React.createElement("td", {
+            key: di,
+            className: "cell",
+            style: {
+              background: "#2a2a2a",
+              borderBottom: bb,
+              cursor: "pointer"
+            },
+            onClick: () => togOff(sh.id, loc.id, di)
+          }, /*#__PURE__*/React.createElement("span", {
+            style: {
+              color: "#666",
+              fontSize: 11
+            }
+          }, "OFF"));
+          return /*#__PURE__*/React.createElement("td", {
+            key: di,
+            className: "cell",
+            style: {
+              background: emp ? `${emp.color}18` : c.bg,
+              borderBottom: bb
+            },
+            onClick: () => paintClick(di, sh.id, loc.id),
+            onContextMenu: e => {
+              e.preventDefault();
+              togOff(sh.id, loc.id, di);
+            }
+          }, /*#__PURE__*/React.createElement("div", {
+            className: "paint-cell",
+            style: {
+              background: emp ? `${emp.color}25` : "transparent",
+              border: emp ? `2px solid ${emp.color}` : "2px dashed #d0cbc2",
+              color: emp ? "#1a1a1a" : "#ccc"
+            }
+          }, emp ? emp.name : "—"));
+        }
+        if (isOff) return /*#__PURE__*/React.createElement("td", {
+          key: di,
+          className: "cell",
+          style: {
+            background: "#2a2a2a",
+            borderBottom: bb
+          }
+        });
+        if (paintMode) return /*#__PURE__*/React.createElement("td", {
+          key: di,
+          className: "cell",
+          style: {
+            background: emp ? `${emp.color}18` : c.bg,
+            borderBottom: bb
+          },
+          onClick: () => paintClick(di, sh.id, loc.id)
+        }, /*#__PURE__*/React.createElement("div", {
+          className: "paint-cell",
+          style: {
+            background: emp ? `${emp.color}25` : "transparent",
+            border: emp ? `2px solid ${emp.color}` : "2px dashed #d0cbc2",
+            color: emp ? "#1a1a1a" : "#ccc"
+          }
+        }, emp ? emp.name : "—"));
+        return /*#__PURE__*/React.createElement("td", {
+          key: di,
+          className: "cell",
+          style: {
+            background: emp ? `${emp.color}25` : c.bg,
+            borderBottom: bb
+          }
+        }, /*#__PURE__*/React.createElement("select", {
+          className: "cell-select",
+          style: emp ? {
+            borderColor: emp.color,
+            borderWidth: 2,
+            color: "#1a1a1a",
+            background: `${emp.color}20`
+          } : {
+            color: "#999"
+          },
+          value: val,
+          onChange: e => assign(di, sh.id, loc.id, e.target.value)
+        }, /*#__PURE__*/React.createElement("option", {
+          value: ""
+        }, "\u2014"), active.map(a => /*#__PURE__*/React.createElement("option", {
+          key: a.id,
+          value: a.id
+        }, a.name))));
+      }));
+    });
+  })))), active.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "stats-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "stats-title-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "stats-title"
+  }, "Employee Hours & Shift Breakdown"), active.some(e => e.pref || e.shiftPref) && /*#__PURE__*/React.createElement("button", {
+    className: "btn-secondary btn-sm",
+    onClick: () => setShowPrefs(p => !p)
+  }, showPrefs ? "Hide Preferences" : "Show Preferences")), /*#__PURE__*/React.createElement("div", {
+    className: "stats-scroll"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "stats-header"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "stats-cell stats-name"
+  }, "Employee"), /*#__PURE__*/React.createElement("span", {
+    className: "stats-cell stats-mo"
+  }, "M/C"), /*#__PURE__*/React.createElement("span", {
+    className: "stats-cell stats-num stats-bold"
+  }, "Hours"), shifts.map(s => /*#__PURE__*/React.createElement("span", {
+    key: s.id,
+    className: "stats-cell stats-num"
+  }, s.name)), showPrefs && /*#__PURE__*/React.createElement("span", {
+    className: "stats-cell stats-pref"
+  }, "Preferences")), active.map(e => {
+    const st = stats[e.id];
+    if (!st) return null;
+    const mcOpts = ["", "Morning/Afternoon", "Afternoon/Closing"];
+    const cycleMC = () => {
+      const ci = mcOpts.indexOf(e.shiftPref);
+      uEmp(e.id, "shiftPref", mcOpts[(ci + 1) % mcOpts.length]);
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      key: e.id,
+      className: "stats-row"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "stats-cell stats-name"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "color-dot-sm",
+      style: {
+        background: e.color
+      }
+    }), " ", e.name), /*#__PURE__*/React.createElement("span", {
+      className: "stats-cell stats-mo",
+      onClick: cycleMC,
+      style: {
+        cursor: "pointer"
+      },
+      title: "Click to cycle M/C"
+    }, e.shiftPref ? /*#__PURE__*/React.createElement("span", {
+      className: `mo-badge ${e.shiftPref === "Morning/Afternoon" ? "mo-ma" : "mo-ac"}`
+    }, e.shiftPref) : /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#ccc",
+        fontSize: 11
+      }
+    }, "\u2014")), /*#__PURE__*/React.createElement("span", {
+      className: "stats-cell stats-num stats-hours",
+      style: st.h < 35 ? {
+        color: "#c0392b"
+      } : {}
+    }, fmtDur(st.h)), shifts.map(s => /*#__PURE__*/React.createElement("span", {
+      key: s.id,
+      className: "stats-cell stats-num"
+    }, st.by[s.id] || 0)), showPrefs && /*#__PURE__*/React.createElement("span", {
+      className: "stats-cell stats-pref stats-pref-text"
+    }, e.pref));
+  }))), renderExportTable());
+}
+ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
+
+</script>
+</body>
+</html>
