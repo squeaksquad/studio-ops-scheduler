@@ -322,11 +322,12 @@ async function captureElement(el, filename) {
   link.click();
 }
 async function apiCall(method, path, body) {
-  const res = await fetch(`${WORKER_URL}${path}`, {
+  const res = await fetch(`${WORKER_URL}/schedule${path}`, {
     method,
     headers: {
       "Content-Type": "application/json"
     },
+    credentials: "include",
     body: body ? JSON.stringify(body) : undefined
   });
   if (!res.ok) {
