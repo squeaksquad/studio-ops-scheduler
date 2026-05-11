@@ -52,7 +52,7 @@
   .btn-snap-delete{color:#c00!important;border-color:#e8c8c8!important;min-width:28px;padding:5px 8px!important}
   .btn-snap-delete:hover{background:#fef2f2!important;border-color:#c00!important}
   .config-panel{background:#fff;border:1px solid #e0dbd2;border-radius:10px;padding:20px;margin-bottom:20px;display:flex;gap:32px;flex-wrap:wrap}
-  .config-section{flex:1 1 220px;min-width:220px}
+  .config-section{flex:1 1 260px;min-width:260px}
   .config-section-wide{flex:2 1 400px;min-width:300px}
   .config-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#7a756a;margin-bottom:10px}
   .config-hint{font-size:11px;color:#aaa;margin:-6px 0 10px}
@@ -92,13 +92,13 @@
   .grid-scroll{overflow-x:auto;border:1px solid #d0cbc2;border-radius:10px;background:#fff;margin-bottom:20px}
   table{width:100%;border-collapse:collapse;min-width:950px}
   th{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px;background:#F0EDE6;color:#5a5548;text-align:center;border-bottom:2px solid #d0cbc2;position:sticky;top:0;z-index:10}
-  th.sticky-shift{position:sticky;left:0;z-index:12;width:100px}
-  th.sticky-loc{position:sticky;left:100px;z-index:12;width:70px}
+  th.sticky-shift{position:sticky;left:0;z-index:12;width:130px}
+  th.sticky-loc{position:sticky;left:130px;z-index:12;width:70px}
   td.sticky-shift{position:sticky;left:0;z-index:6}
-  td.sticky-loc{position:sticky;left:100px;z-index:5}
+  td.sticky-loc{position:sticky;left:130px;z-index:5}
   td.shift-label{padding:8px 10px;text-align:center;font-size:13px;vertical-align:middle}
-  .shift-label-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
-  .shift-time{font-size:10px;color:#7a756a;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .shift-label-inner{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .shift-time{font-size:10px;color:#7a756a;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.4}
   td.loc-label{font-size:13px;font-weight:600;padding:8px 10px;text-align:center}
   td.cell{padding:4px 6px;text-align:center;vertical-align:middle}
   .shift-group-first td{border-top:5px solid #2a2a2a}
@@ -161,7 +161,8 @@ const DAYS = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"
 const DAY_ABBR = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
 const COLORS = ["#FF1744", "#00C853", "#2979FF", "#FFD600", "#E040FB", "#FF6D00", "#00BCD4", "#FF4081", "#1DE9B6", "#C6FF00", "#FF9E80", "#B388FF"];
 function cTxt(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return(r*299+g*587+b*114)/1000>150?"#1a1a1a":"#fff"}
-const STORE = "shift-scheduler-v5";
+const STORE = "shift-scheduler-v6";
+const STORE_OLD = "shift-scheduler-v5";
 const WORKER_URL = "https://berklee.bryandimaio.com";
 const D_SHIFTS = [{
   id: "s1",
@@ -340,8 +341,10 @@ async function apiCall(method, path, body) {
   return res.json();
 }
 function App() {
-  const sv = useMemo(() => load(STORE), []);
+  const sv = useMemo(() => load(STORE) || load(STORE_OLD), []);
   const [shifts, setShifts] = useState(sv?.shifts || D_SHIFTS);
+  const D_SCHED_TYPES = [{id:"default",name:"Default",days:[0,1,2,3,4,5,6],overrides:{}}];
+  const [schedTypes, setSchedTypes] = useState(sv?.schedTypes || D_SCHED_TYPES);
   const [locs, setLocs] = useState(sv?.locs || D_LOCS);
   const [emps, setEmps] = useState(() => {
     if (sv?.emps) return sv.emps.map(e => ({
@@ -372,13 +375,53 @@ function App() {
   useEffect(() => {
     save(STORE, {
       shifts,
+      schedTypes,
       locs,
       emps,
       sched,
       off: [...off]
     });
-  }, [shifts, locs, emps, sched, off]);
+  }, [shifts, schedTypes, locs, emps, sched, off]);
   const active = useMemo(() => emps.filter(e => e.name.trim()), [emps]);
+  const getShiftTimes = useCallback((shiftId, dayIndex) => {
+    const st = schedTypes.find(t => t.days.includes(dayIndex));
+    if (st && st.overrides[shiftId]) return st.overrides[shiftId];
+    const sh = shifts.find(s => s.id === shiftId);
+    return sh ? {start: sh.start, end: sh.end} : {start:"00:00",end:"00:00"};
+  }, [shifts, schedTypes]);
+  const addSchedType = () => {
+    if (schedTypes.length >= 4) return;
+    const ov = {};
+    shifts.forEach(s => { ov[s.id] = {start: s.start, end: s.end}; });
+    setSchedTypes(p => [...p, {id: `st${uid()}`, name: `Alternate ${p.length}`, days: [], overrides: ov}]);
+  };
+  const rmSchedType = (id) => {
+    if (id === "default") return;
+    setSchedTypes(p => {
+      const removing = p.find(t => t.id === id);
+      if (!removing) return p;
+      const freedDays = removing.days;
+      return p.filter(t => t.id !== id).map(t => t.id === "default" ? {...t, days: [...new Set([...t.days, ...freedDays])].sort((a,b)=>a-b)} : t);
+    });
+  };
+  const toggleSchedDay = (typeId, dayIdx) => {
+    setSchedTypes(p => {
+      return p.map(t => {
+        if (t.id === typeId) {
+          if (t.days.includes(dayIdx)) return {...t, days: t.days.filter(d => d !== dayIdx)};
+          return {...t, days: [...t.days, dayIdx].sort((a,b)=>a-b)};
+        }
+        if (t.days.includes(dayIdx)) return {...t, days: t.days.filter(d => d !== dayIdx)};
+        return t;
+      });
+    });
+  };
+  const uSchedOverride = (typeId, shiftId, field, val) => {
+    setSchedTypes(p => p.map(t => t.id === typeId ? {...t, overrides: {...t.overrides, [shiftId]: {...(t.overrides[shiftId]||{}), [field]: val}}} : t));
+  };
+  const uSchedName = (typeId, name) => {
+    setSchedTypes(p => p.map(t => t.id === typeId ? {...t, name} : t));
+  };
   const sk = (d, s, l) => `${d}|${s}|${l}`;
   const dk = (s, l, d) => `${s}|${l}|${d}`;
   const assign = useCallback((d, s, l, eid) => setSched(p => ({
@@ -436,7 +479,8 @@ function App() {
       });
     });
     DAYS.forEach((_, di) => shifts.forEach(s => {
-      const d = dur(s.start, s.end);
+      const times = getShiftTimes(s.id, di);
+      const d = dur(times.start, times.end);
       locs.forEach(l => {
         if (off.has(dk(s.id, l.id, di))) return;
         const eid = sched[sk(di, s.id, l.id)];
@@ -447,7 +491,7 @@ function App() {
       });
     }));
     return o;
-  }, [sched, shifts, locs, active, off]);
+  }, [sched, shifts, locs, active, off, getShiftTimes]);
   const uShift = (id, f, v) => setShifts(p => p.map(s => s.id === id ? {
     ...s,
     [f]: v
@@ -455,12 +499,16 @@ function App() {
   const addShift = () => {
     if (shifts.length >= 6) return;
     const last = shifts[shifts.length - 1];
+    const newId = `s${uid()}`;
+    const newStart = last ? last.end : "12:00";
+    const newEnd = "17:00";
     setShifts(p => [...p, {
-      id: `s${uid()}`,
+      id: newId,
       name: `Shift ${p.length + 1}`,
-      start: last ? last.end : "12:00",
-      end: "17:00"
+      start: newStart,
+      end: newEnd
     }]);
+    setSchedTypes(p => p.map(st => st.id === "default" ? st : {...st, overrides: {...st.overrides, [newId]: {start: newStart, end: newEnd}}}));
   };
   const rmShift = id => {
     if (shifts.length <= 1) return;
@@ -481,6 +529,12 @@ function App() {
       });
       return n;
     });
+    setSchedTypes(p => p.map(st => {
+      if (!st.overrides[id]) return st;
+      const ov = {...st.overrides};
+      delete ov[id];
+      return {...st, overrides: ov};
+    }));
   };
   const uLoc = (id, n) => setLocs(p => p.map(l => l.id === id ? {
     ...l,
@@ -564,6 +618,7 @@ function App() {
   };
   const getState = () => ({
     shifts,
+    schedTypes,
     locs,
     emps,
     sched,
@@ -571,6 +626,8 @@ function App() {
   });
   const loadState = data => {
     if (data.shifts) setShifts(data.shifts);
+    if (data.schedTypes) setSchedTypes(data.schedTypes);
+    else setSchedTypes(D_SCHED_TYPES);
     if (data.locs) setLocs(data.locs);
     if (data.emps) setEmps(data.emps.map(e => ({
       pref: "",
@@ -682,20 +739,21 @@ function App() {
         locs.forEach(loc => {
           if (off.has(dk(sh.id, loc.id, di))) return;
           if (sched[sk(di, sh.id, loc.id)] === soloId) {
+            const times = getShiftTimes(sh.id, di);
             result.push({
               day,
               shift: sh.name,
               loc: loc.name,
-              dur: dur(sh.start, sh.end),
-              start: tl(sh.start),
-              end: tl(sh.end)
+              dur: dur(times.start, times.end),
+              start: tl(times.start),
+              end: tl(times.end)
             });
           }
         });
       });
     });
     return result;
-  }, [soloId, sched, shifts, locs, off]);
+  }, [soloId, sched, shifts, locs, off, getShiftTimes]);
   return /*#__PURE__*/React.createElement("div", {
     className: "root"
   }, /*#__PURE__*/React.createElement("div", {
@@ -851,39 +909,84 @@ function App() {
     className: "config-title"
   }, "Shifts & Times"), /*#__PURE__*/React.createElement("div", {
     className: "config-hint"
-  }, "All locations share these times \xB7 15-min increments"), shifts.map(s => /*#__PURE__*/React.createElement("div", {
-    key: s.id,
-    className: "config-row"
-  }, /*#__PURE__*/React.createElement("input", {
-    className: "input input-narrow",
-    value: s.name,
-    onChange: e => uShift(s.id, "name", e.target.value),
-    placeholder: "Shift name"
-  }), /*#__PURE__*/React.createElement("select", {
-    className: "select-time",
-    value: s.start,
-    onChange: e => uShift(s.id, "start", e.target.value)
-  }, TIMES.map(o => /*#__PURE__*/React.createElement("option", {
-    key: o.v,
-    value: o.v
-  }, o.l))), /*#__PURE__*/React.createElement("span", {
-    className: "config-label"
-  }, "to"), /*#__PURE__*/React.createElement("select", {
-    className: "select-time",
-    value: s.end,
-    onChange: e => uShift(s.id, "end", e.target.value)
-  }, TIMES.map(o => /*#__PURE__*/React.createElement("option", {
-    key: o.v,
-    value: o.v
-  }, o.l))), /*#__PURE__*/React.createElement("span", {
-    className: "duration-badge"
-  }, fmtDur(dur(s.start, s.end))), shifts.length > 1 && /*#__PURE__*/React.createElement("button", {
-    className: "btn-remove",
-    onClick: () => rmShift(s.id)
-  }, "\xD7"))), shifts.length < 6 && /*#__PURE__*/React.createElement("button", {
+  }, "15-min increments \xB7 Assign days to each schedule type"), schedTypes.map((st, sti) => {
+    const isDefault = st.id === "default";
+    return /*#__PURE__*/React.createElement("div", {
+      key: st.id,
+      style: {background: sti > 0 ? "#f5f2ec" : "transparent", borderRadius: 8, padding: sti > 0 ? "10px 10px 6px" : "0 0 6px", marginBottom: 10, border: sti > 0 ? "1px dashed #d0cbc2" : "none"}
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap"}
+    }, /*#__PURE__*/React.createElement("input", {
+      className: "input",
+      style: {width: 100, fontWeight: 600, fontSize: 12},
+      value: st.name,
+      onChange: e => uSchedName(st.id, e.target.value)
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {display: "flex", gap: 3, flexWrap: "wrap"}
+    }, DAY_ABBR.map((d, di) => {
+      const active = st.days.includes(di);
+      return /*#__PURE__*/React.createElement("button", {
+        key: di,
+        onClick: () => toggleSchedDay(st.id, di),
+        style: {
+          padding: "2px 7px", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid",
+          fontFamily: "'Nunito',sans-serif",
+          background: active ? (di < 2 ? "#e6f5f0" : "#e3edf7") : "#fff",
+          color: active ? (di < 2 ? "#2a6e5a" : "#3a6ea5") : "#bbb",
+          borderColor: active ? (di < 2 ? "#2a6e5a" : "#3a6ea5") : "#ddd"
+        }
+      }, d);
+    })), !isDefault && /*#__PURE__*/React.createElement("button", {
+      className: "btn-remove",
+      onClick: () => rmSchedType(st.id),
+      title: "Remove schedule type"
+    }, "\xD7")), shifts.map(s => {
+      const sStart = isDefault ? s.start : (st.overrides[s.id]?.start || s.start);
+      const sEnd = isDefault ? s.end : (st.overrides[s.id]?.end || s.end);
+      const onStartChange = isDefault ? (e => uShift(s.id, "start", e.target.value)) : (e => uSchedOverride(st.id, s.id, "start", e.target.value));
+      const onEndChange = isDefault ? (e => uShift(s.id, "end", e.target.value)) : (e => uSchedOverride(st.id, s.id, "end", e.target.value));
+      return /*#__PURE__*/React.createElement("div", {
+        key: s.id,
+        className: "config-row"
+      }, isDefault ? /*#__PURE__*/React.createElement("input", {
+        className: "input input-narrow",
+        value: s.name,
+        onChange: e => uShift(s.id, "name", e.target.value),
+        placeholder: "Shift name"
+      }) : /*#__PURE__*/React.createElement("span", {
+        style: {width: 120, fontSize: 12, color: "#666", flexShrink: 0}
+      }, s.name), /*#__PURE__*/React.createElement("select", {
+        className: "select-time",
+        value: sStart,
+        onChange: onStartChange
+      }, TIMES.map(o => /*#__PURE__*/React.createElement("option", {
+        key: o.v,
+        value: o.v
+      }, o.l))), /*#__PURE__*/React.createElement("span", {
+        className: "config-label"
+      }, "to"), /*#__PURE__*/React.createElement("select", {
+        className: "select-time",
+        value: sEnd,
+        onChange: onEndChange
+      }, TIMES.map(o => /*#__PURE__*/React.createElement("option", {
+        key: o.v,
+        value: o.v
+      }, o.l))), /*#__PURE__*/React.createElement("span", {
+        className: "duration-badge"
+      }, fmtDur(dur(sStart, sEnd))), isDefault && shifts.length > 1 && /*#__PURE__*/React.createElement("button", {
+        className: "btn-remove",
+        onClick: () => rmShift(s.id)
+      }, "\xD7"));
+    }));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {display: "flex", gap: 8, marginTop: 4}
+  }, shifts.length < 6 && /*#__PURE__*/React.createElement("button", {
     className: "btn-add",
     onClick: addShift
-  }, "+ Add Shift")), /*#__PURE__*/React.createElement("div", {
+  }, "+ Add Shift"), schedTypes.length < 4 && /*#__PURE__*/React.createElement("button", {
+    className: "btn-add",
+    onClick: addSchedType
+  }, "+ Add Alternate"))), /*#__PURE__*/React.createElement("div", {
     className: "config-section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "config-title"
@@ -999,7 +1102,7 @@ function App() {
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
     className: "sticky-shift",
     style: {
-      width: 100
+      width: 130
     }
   }, "Shift"), /*#__PURE__*/React.createElement("th", {
     className: "sticky-loc",
@@ -1029,9 +1132,19 @@ function App() {
         }
       }, /*#__PURE__*/React.createElement("div", {
         className: "shift-label-inner"
-      }, /*#__PURE__*/React.createElement("strong", null, sh.name), /*#__PURE__*/React.createElement("span", {
-        className: "shift-time"
-      }, tl(sh.start), "\u2013", tl(sh.end)))), /*#__PURE__*/React.createElement("td", {
+      }, /*#__PURE__*/React.createElement("strong", null, sh.name), (() => {
+        const timeGroups = {};
+        schedTypes.forEach(st => {
+          if (!st.days.length) return;
+          const t = (st.id === "default") ? {start: sh.start, end: sh.end} : (st.overrides[sh.id] || {start: sh.start, end: sh.end});
+          const key = `${t.start}-${t.end}`;
+          if (!timeGroups[key]) timeGroups[key] = {start: t.start, end: t.end, days: []};
+          st.days.forEach(d => timeGroups[key].days.push(d));
+        });
+        const groups = Object.values(timeGroups);
+        if (groups.length <= 1) return /*#__PURE__*/React.createElement("span", {className: "shift-time"}, tl(sh.start), "\u2013", tl(sh.end));
+        return groups.map((g, gi) => /*#__PURE__*/React.createElement("span", {key: gi, className: "shift-time"}, tl(g.start), "\u2013", tl(g.end), " ", /*#__PURE__*/React.createElement("span", {style:{opacity:.6,fontSize:9}}, "(", g.days.map(d => DAY_ABBR[d]).join("/"), ")")));
+      })())), /*#__PURE__*/React.createElement("td", {
         className: "loc-label sticky-loc",
         style: {
           background: c.bg,
@@ -1253,13 +1366,19 @@ function App() {
           fontSize: 13,
           padding: 8
         }
-      }, sh.name, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontSize: 10,
-          fontWeight: 400,
-          color: "#7a756a"
-        }
-      }, tl(sh.start), "\u2013", tl(sh.end))), /*#__PURE__*/React.createElement("td", {
+      }, sh.name, /*#__PURE__*/React.createElement("br", null), (() => {
+        const timeGroups = {};
+        schedTypes.forEach(st => {
+          if (!st.days.length) return;
+          const t = (st.id === "default") ? {start: sh.start, end: sh.end} : (st.overrides[sh.id] || {start: sh.start, end: sh.end});
+          const key = `${t.start}-${t.end}`;
+          if (!timeGroups[key]) timeGroups[key] = {start: t.start, end: t.end, days: []};
+          st.days.forEach(d => timeGroups[key].days.push(d));
+        });
+        const groups = Object.values(timeGroups);
+        if (groups.length <= 1) return /*#__PURE__*/React.createElement("span", {style:{fontSize:10,fontWeight:400,color:"#7a756a"}}, tl(sh.start), "\u2013", tl(sh.end));
+        return groups.map((g,gi) => /*#__PURE__*/React.createElement("span", {key:gi,style:{fontSize:10,fontWeight:400,color:"#7a756a",display:"block"}}, tl(g.start), "\u2013", tl(g.end), " (", g.days.map(d=>DAY_ABBR[d]).join("/"), ")"));
+      })()), /*#__PURE__*/React.createElement("td", {
         style: {
           background: c.bg,
           borderBottom: bb,
