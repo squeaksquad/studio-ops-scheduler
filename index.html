@@ -137,8 +137,12 @@
   .solo-header{padding:16px 20px;background:#FAFAF7;border-bottom:1px solid #e0dbd2}
   .solo-name{font-size:20px;font-weight:700}
   .solo-subtitle{font-size:12px;color:#999;margin-top:2px}
-  .solo-table{width:100%;border-collapse:collapse}
+  .solo-table{width:100%;border-collapse:collapse;table-layout:fixed}
   .solo-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;background:#F0EDE6;color:#5a5548;text-align:left;border-bottom:2px solid #d0cbc2;position:static}
+  .solo-table th:nth-child(1){width:22%}
+  .solo-table th:nth-child(2){width:22%}
+  .solo-table th:nth-child(3){width:36%}
+  .solo-table th:nth-child(4){width:20%}
   .solo-table td{padding:8px 12px;border-bottom:1px solid #f0ece4;font-size:13px}
   .solo-time{white-space:nowrap}
   .solo-time{font-variant-numeric:tabular-nums;font-size:12px;color:#777}
