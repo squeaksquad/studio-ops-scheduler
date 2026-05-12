@@ -149,7 +149,55 @@
   .export-table{width:100%;border-collapse:collapse;border:1px solid #d0cbc2;border-radius:8px;overflow:hidden;table-layout:fixed}
   .export-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:8px;background:#F0EDE6;color:#5a5548;text-align:center;border-bottom:2px solid #d0cbc2}
   .export-table td{border-right:1px solid #e8e4dc}
-  @media(max-width:700px){.root{padding:12px}.config-panel{flex-direction:column;gap:16px}.header{flex-direction:column}}
+  @media(max-width:700px){
+    .root{padding:10px 8px}
+    .header{flex-direction:column;gap:8px}
+    .header-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .header-btns .btn-secondary,.header-btns .btn-primary{text-align:center;justify-content:center;padding:10px 8px}
+    .title{font-size:19px}
+    .toolbar{flex-direction:column;align-items:stretch;gap:6px}
+    .toolbar-left{justify-content:space-between}
+    .config-panel{flex-direction:column;gap:16px;padding:14px}
+    .config-section,.config-section-wide{min-width:0!important;flex-basis:100%!important}
+    .config-row{flex-wrap:wrap}
+    .input-narrow{width:100px}
+    .select-mo{min-width:110px}
+    .emp-pref-input{margin-left:30px}
+    .grid-scroll{border-radius:6px;-webkit-overflow-scrolling:touch}
+    table{min-width:650px}
+    th.sticky-shift{width:80px!important}
+    th.sticky-loc{left:80px!important;width:46px!important}
+    td.sticky-shift{left:0}
+    td.sticky-loc{left:80px!important}
+    td.shift-label{padding:5px 3px;font-size:11px}
+    .shift-label-inner strong{font-size:11px}
+    .shift-time{font-size:8px}
+    td.loc-label{font-size:10px;font-weight:700;padding:4px 2px}
+    td.cell{padding:3px 2px}
+    .cell-select{font-size:11px;padding:3px 1px;border-radius:4px}
+    .paint-cell{font-size:11px;padding:3px 2px;min-height:28px;border-radius:4px}
+    th{font-size:10px;padding:8px 4px;letter-spacing:.02em}
+    .shift-group-first td{border-top:3px solid #2a2a2a}
+    .paint-banner{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;font-size:12px}
+    .paint-palette{gap:3px}
+    .paint-chip{padding:4px 8px;font-size:11px}
+    .edit-banner{font-size:12px;padding:8px 12px}
+    .snap-panel{padding:12px 14px}
+    .snap-save-row{flex-direction:column;gap:6px}
+    .stats-panel{padding:14px 10px;border-radius:8px}
+    .stats-header,.stats-row{min-width:420px}
+    .stats-name{flex:0 0 110px;min-width:90px}
+    .stats-mo{flex:0 0 100px}
+    .stats-num{flex:0 0 55px}
+    .stats-cell{font-size:12px}
+    .stats-pref{min-width:100px}
+    .modal-overlay{padding:8px}
+    .modal{padding:16px;border-radius:10px}
+    .modal-title{font-size:16px}
+    .solo-header{padding:12px 14px}
+    .solo-name{font-size:17px}
+    .solo-table th,.solo-table td{padding:6px 8px;font-size:12px}
+  }
 </style>
 </head>
 <body>
@@ -1167,20 +1215,11 @@ function App() {
     cellSpacing: 0,
     cellPadding: 0
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-    className: "sticky-shift",
-    style: {
-      width: 130
-    }
+    className: "sticky-shift"
   }, "Shift"), /*#__PURE__*/React.createElement("th", {
-    className: "sticky-loc",
-    style: {
-      width: 70
-    }
+    className: "sticky-loc"
   }, "Loc"), DAYS.map((d, i) => /*#__PURE__*/React.createElement("th", {
-    key: i,
-    style: {
-      minWidth: 130
-    }
+    key: i
   }, d)))), /*#__PURE__*/React.createElement("tbody", null, shifts.map((sh, si) => {
     const c = B[si % B.length];
     return locs.map((loc, li) => {
