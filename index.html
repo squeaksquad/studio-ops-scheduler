@@ -95,8 +95,9 @@
   .paint-chip-erase{background:#f0ece4;color:#666;border:2px dashed #ccc}
   .paint-chip-erase.paint-chip-active{border-color:#c00!important;border-style:solid}
   .grid-scroll{overflow-x:auto;border:1px solid #d0cbc2;border-radius:10px;background:#fff;margin-bottom:20px}
-  table{width:100%;border-collapse:collapse;min-width:950px;table-layout:fixed}
+  table{width:100%;border-collapse:collapse;min-width:950px}
   th{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px;background:#F0EDE6;color:#5a5548;text-align:center;border-bottom:2px solid #d0cbc2;position:sticky;top:0;z-index:10}
+  th:not(.sticky-shift):not(.sticky-loc){width:calc((100% - 130px - 70px) / 7)}
   th.sticky-shift{position:sticky;left:0;z-index:12;width:130px}
   th.sticky-loc{position:sticky;left:130px;z-index:12;width:70px}
   td.sticky-shift{position:sticky;left:0;z-index:6}
@@ -165,6 +166,7 @@
     .emp-pref-input{margin-left:30px}
     .grid-scroll{border-radius:6px;-webkit-overflow-scrolling:touch}
     table{min-width:650px}
+    th:not(.sticky-shift):not(.sticky-loc){width:calc((100% - 90px - 46px) / 7)}
     th.sticky-shift{width:90px!important}
     th.sticky-loc{left:90px!important;width:46px!important}
     td.sticky-shift{left:0}
