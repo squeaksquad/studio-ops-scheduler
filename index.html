@@ -41,6 +41,11 @@
   .btn-tool:hover{background:#f5f2ec;border-color:#ccc}
   .btn-tool-active{background:#f0ece4;border-color:#c4bfb4}
   .tool-icon{font-size:14px}
+  .btn-undo{background:#fff;border:1px solid #e0dbd2;padding:6px 10px;border-radius:6px;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;color:#555;min-width:34px}
+  .btn-undo:hover:not(:disabled){background:#f5f2ec;border-color:#ccc}
+  .btn-undo:disabled{opacity:.3;cursor:default}
+  .undo-group{display:flex;gap:4px;align-items:center}
+  .undo-count{font-size:10px;color:#999;font-variant-numeric:tabular-nums;min-width:16px;text-align:center}
   .snap-panel{background:#fff;border:1px solid #e0dbd2;border-radius:10px;padding:16px 20px;margin-bottom:16px}
   .snap-save-row{display:flex;gap:8px;margin-bottom:8px}
   .snap-msg{font-size:12px;color:#2a6e5a;margin-bottom:8px;font-weight:500}
@@ -233,6 +238,9 @@ const TIMES = genTimes();
 function uid() {
   return Math.random().toString(36).slice(2, 8);
 }
+function fName(n) {
+  return (n || "").split(/\s+/)[0];
+}
 function tl(t) {
   return TIMES.find(o => o.v === t)?.l || t;
 }
@@ -389,14 +397,69 @@ function App() {
     const sh = shifts.find(s => s.id === shiftId);
     return sh ? {start: sh.start, end: sh.end} : {start:"00:00",end:"00:00"};
   }, [shifts, schedTypes]);
+  const getState = () => ({
+    shifts,
+    schedTypes,
+    locs,
+    emps,
+    sched,
+    off: [...off]
+  });
+  const loadState = data => {
+    if (data.shifts) setShifts(data.shifts);
+    if (data.schedTypes) setSchedTypes(data.schedTypes);
+    else setSchedTypes(D_SCHED_TYPES);
+    if (data.locs) setLocs(data.locs);
+    if (data.emps) setEmps(data.emps.map(e => ({
+      pref: "",
+      shiftPref: "",
+      ...e
+    })));
+    if (data.sched) setSched(data.sched);
+    if (data.off) setOff(new Set(data.off));
+  };
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const getStateRef = useRef(getState);
+  getStateRef.current = getState;
+  const pushUndo = useCallback(() => {
+    setUndoStack(h => [...h.slice(-49), getStateRef.current()]);
+    setRedoStack([]);
+  }, []);
+  const undo = () => {
+    if (!undoStack.length) return;
+    const prev = undoStack[undoStack.length - 1];
+    setRedoStack(r => [...r, getState()]);
+    loadState(prev);
+    setUndoStack(h => h.slice(0, -1));
+  };
+  const redo = () => {
+    if (!redoStack.length) return;
+    const next = redoStack[redoStack.length - 1];
+    setUndoStack(h => [...h, getState()]);
+    loadState(next);
+    setRedoStack(r => r.slice(0, -1));
+  };
+  useEffect(() => {
+    const handler = e => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if (mod && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); }
+      if (mod && e.key === 'y') { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
   const addSchedType = () => {
     if (schedTypes.length >= 4) return;
+    pushUndo();
     const ov = {};
     shifts.forEach(s => { ov[s.id] = {start: s.start, end: s.end}; });
     setSchedTypes(p => [...p, {id: `st${uid()}`, name: `Alternate ${p.length}`, days: [], overrides: ov}]);
   };
   const rmSchedType = (id) => {
     if (id === "default") return;
+    pushUndo();
     setSchedTypes(p => {
       const removing = p.find(t => t.id === id);
       if (!removing) return p;
@@ -405,6 +468,7 @@ function App() {
     });
   };
   const toggleSchedDay = (typeId, dayIdx) => {
+    pushUndo();
     setSchedTypes(p => {
       return p.map(t => {
         if (t.id === typeId) {
@@ -424,11 +488,15 @@ function App() {
   };
   const sk = (d, s, l) => `${d}|${s}|${l}`;
   const dk = (s, l, d) => `${s}|${l}|${d}`;
-  const assign = useCallback((d, s, l, eid) => setSched(p => ({
+  const assign = useCallback((d, s, l, eid) => {
+    pushUndo();
+    setSched(p => ({
     ...p,
     [sk(d, s, l)]: eid || null
-  })), []);
+  }));
+  }, [pushUndo]);
   const togOff = useCallback((s, l, d) => {
+    pushUndo();
     const k = dk(s, l, d);
     setOff(p => {
       const n = new Set(p);
@@ -444,8 +512,9 @@ function App() {
       }
       return n;
     });
-  }, []);
+  }, [pushUndo]);
   const paintClick = useCallback((di, si, li) => {
+    pushUndo();
     if (paintId === null) setSched(p => {
       const c = {
         ...p
@@ -466,7 +535,7 @@ function App() {
         [key]: paintId
       };
     });
-  }, [paintId]);
+  }, [paintId, pushUndo]);
   const stats = useMemo(() => {
     const o = {};
     active.forEach(e => {
@@ -498,6 +567,7 @@ function App() {
   } : s));
   const addShift = () => {
     if (shifts.length >= 6) return;
+    pushUndo();
     const last = shifts[shifts.length - 1];
     const newId = `s${uid()}`;
     const newStart = last ? last.end : "12:00";
@@ -512,6 +582,7 @@ function App() {
   };
   const rmShift = id => {
     if (shifts.length <= 1) return;
+    pushUndo();
     setShifts(p => p.filter(s => s.id !== id));
     setSched(p => {
       const c = {
@@ -541,12 +612,13 @@ function App() {
     name: n
   } : l));
   const addLoc = () => {
-    if (locs.length < 6) setLocs(p => [...p, {
+    if (locs.length < 6) { pushUndo(); setLocs(p => [...p, {
       id: `l${uid()}`,
       name: `Loc ${p.length + 1}`
-    }]);
+    }]); }
   };
   const rmLoc = id => {
+    pushUndo();
     setLocs(p => p.filter(l => l.id !== id));
     setSched(p => {
       const c = {
@@ -559,6 +631,7 @@ function App() {
     });
   };
   const moveLoc = (idx, dir) => {
+    pushUndo();
     setLocs(p => {
       const n = [...p];
       const ni = idx + dir;
@@ -572,10 +645,11 @@ function App() {
     [field]: val
   } : e));
   const clearAll = () => {
-    if (confirm("Clear all assignments?")) setSched({});
+    if (confirm("Clear all assignments?")) { pushUndo(); setSched({}); }
   };
   const clearEmps = () => {
     if (confirm("Clear all employee data?")) {
+      pushUndo();
       setEmps(D_EMP);
       setSched({});
     }
@@ -583,6 +657,7 @@ function App() {
   const doPaste = () => {
     const parsed = parsePaste(paste);
     if (!parsed.length) return;
+    pushUndo();
     setEmps(p => {
       const n = [...p];
       parsed.forEach((r, i) => {
@@ -615,27 +690,6 @@ function App() {
       setPaintMode(true);
       setPaintId(null);
     }
-  };
-  const getState = () => ({
-    shifts,
-    schedTypes,
-    locs,
-    emps,
-    sched,
-    off: [...off]
-  });
-  const loadState = data => {
-    if (data.shifts) setShifts(data.shifts);
-    if (data.schedTypes) setSchedTypes(data.schedTypes);
-    else setSchedTypes(D_SCHED_TYPES);
-    if (data.locs) setLocs(data.locs);
-    if (data.emps) setEmps(data.emps.map(e => ({
-      pref: "",
-      shiftPref: "",
-      ...e
-    })));
-    if (data.sched) setSched(data.sched);
-    if (data.off) setOff(new Set(data.off));
   };
   const listSnapshots = async () => {
     if (!workerReady()) {
@@ -682,6 +736,7 @@ function App() {
     setSnapMsg("");
     try {
       const data = await apiCall("GET", `/snapshot/${encodeURIComponent(name)}`);
+      pushUndo();
       loadState(data);
       setSnapMsg(`Loaded "${name}"`);
     } catch (e) {
@@ -783,7 +838,19 @@ function App() {
     className: "toolbar"
   }, /*#__PURE__*/React.createElement("div", {
     className: "toolbar-left"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "undo-group"
   }, /*#__PURE__*/React.createElement("button", {
+    className: "btn-undo",
+    onClick: undo,
+    disabled: !undoStack.length,
+    title: `Undo (Ctrl+Z)${undoStack.length ? ` \u00B7 ${undoStack.length} step${undoStack.length !== 1 ? "s" : ""}` : ""}`
+  }, "\u21A9"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-undo",
+    onClick: redo,
+    disabled: !redoStack.length,
+    title: `Redo (Ctrl+Shift+Z)${redoStack.length ? ` \u00B7 ${redoStack.length} step${redoStack.length !== 1 ? "s" : ""}` : ""}`
+  }, "\u21AA")), /*#__PURE__*/React.createElement("button", {
     className: `btn-tool${showSnapPanel ? " btn-tool-active" : ""}`,
     onClick: () => {
       setShowSnapPanel(p => !p);
@@ -1205,7 +1272,7 @@ function App() {
               border: emp ? "2px solid transparent" : "2px dashed #d0cbc2",
               color: emp ? cTxt(emp.color) : "#ccc"
             }
-          }, emp ? emp.name : "—"));
+          }, emp ? fName(emp.name) : "—"));
         }
         if (isOff) return /*#__PURE__*/React.createElement("td", {
           key: di,
@@ -1230,7 +1297,7 @@ function App() {
             border: emp ? "2px solid transparent" : "2px dashed #d0cbc2",
             color: emp ? cTxt(emp.color) : "#ccc"
           }
-        }, emp ? emp.name : "—"));
+        }, emp ? fName(emp.name) : "—"));
         return /*#__PURE__*/React.createElement("td", {
           key: di,
           className: "cell",
@@ -1255,7 +1322,7 @@ function App() {
         }, "\u2014"), active.map(a => /*#__PURE__*/React.createElement("option", {
           key: a.id,
           value: a.id
-        }, a.name))));
+        }, fName(a.name)))));
       }));
     });
   })))), active.length > 0 && /*#__PURE__*/React.createElement("div", {
