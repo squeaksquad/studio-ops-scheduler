@@ -441,6 +441,7 @@ function App() {
   const [showSolo, setShowSolo] = useState(false);
   const [highlightId, setHighlightId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const gridRef = useRef(null);
   const soloRef = useRef(null);
   const exportRef = useRef(null);
@@ -471,16 +472,29 @@ function App() {
           const focusedId = document.activeElement && document.activeElement.dataset.soloEmp;
           if (focusedId) idx = active.findIndex(a => a.id === focusedId);
         }
-        if (idx === -1) return;
+        if (idx === -1) {
+          if (!active.length) return;
+          const target = up ? active[active.length - 1] : active[0];
+          if (highlightId) setHighlightId(target.id);
+          setTimeout(() => { const btn = document.querySelector(`[data-solo-emp="${target.id}"]`); if (btn) { btn.focus(); btn.scrollIntoView({block:"nearest"}); } }, 0);
+          return;
+        }
         const next = up ? idx - 1 : idx + 1;
         if (next < 0 || next >= active.length) return;
         if (highlightId) setHighlightId(active[next].id);
         setTimeout(() => { const btn = document.querySelector(`[data-solo-emp="${active[next].id}"]`); if (btn) { btn.focus(); btn.scrollIntoView({block:"nearest"}); } }, 0);
       }
+      if (paintMode && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        const order = [null, ...active.map(a => a.id)];
+        const ci = order.indexOf(paintId);
+        const ni = e.key === "ArrowLeft" ? ci - 1 : ci + 1;
+        if (ni >= 0 && ni < order.length) setPaintId(order[ni]);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [highlightId, active]);
+  }, [highlightId, active, paintMode, paintId]);
   const getShiftTimes = useCallback((shiftId, dayIndex) => {
     const st = schedTypes.find(t => t.days.includes(dayIndex));
     if (st && st.overrides[shiftId]) return st.overrides[shiftId];
@@ -985,7 +999,12 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "tool-icon"
-  }, "\uD83D\uDC64"), " Solo Worker View"))), showSnapPanel && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDC64"), " Solo Worker View"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-tool",
+    onClick: () => setShowShortcuts(true)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tool-icon"
+  }, "\u2328"), " Shortcuts"))), showSnapPanel && /*#__PURE__*/React.createElement("div", {
     className: "snap-panel"
   }, /*#__PURE__*/React.createElement("div", {
     className: "snap-save-row"
@@ -1512,7 +1531,37 @@ function App() {
     }, st.by[s.id] || 0)), showPrefs && /*#__PURE__*/React.createElement("span", {
       className: "stats-cell stats-pref stats-pref-text"
     }, e.pref));
-  }))), /*#__PURE__*/React.createElement("div", {
+  }))), showShortcuts && /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: () => setShowShortcuts(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal",
+    onClick: e => e.stopPropagation(),
+    style: {maxWidth: 440}
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-header"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "modal-title"
+  }, "\u2328\uFE0F Keyboard Shortcuts"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-remove",
+    onClick: () => setShowShortcuts(false)
+  }, "\u00D7")), /*#__PURE__*/React.createElement("div", {
+    style: {fontSize: 13, lineHeight: 2}
+  }, [
+    ["Shift + S", "Toggle solo on / off"],
+    ["P", "Move solo / focus up"],
+    [";", "Move solo / focus down"],
+    ["\u2190 / \u2192", "Cycle paint selection (paint mode)"],
+    ["Ctrl + Z", "Undo"],
+    ["Ctrl + Shift + Z", "Redo"]
+  ].map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f0ece4", padding: "4px 0"}
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {background: "#f0ece4", padding: "1px 8px", borderRadius: 4, fontFamily: "monospace", fontSize: 12, fontWeight: 600}
+  }, r[0]), /*#__PURE__*/React.createElement("span", {
+    style: {color: "#666"}
+  }, r[1])))))), /*#__PURE__*/React.createElement("div", {
     ref: exportRef,
     className: "export-container",
     style: {
