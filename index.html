@@ -455,6 +455,24 @@ function App() {
     });
   }, [shifts, schedTypes, locs, emps, sched, off]);
   const active = useMemo(() => emps.filter(e => e.name.trim()), [emps]);
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.key === "S" && e.shiftKey) {
+        if (highlightId) { setHighlightId(null); return; }
+        const empId = document.activeElement && document.activeElement.dataset.soloEmp;
+        if (empId) setHighlightId(empId);
+        return;
+      }
+      if (!highlightId) return;
+      const idx = active.findIndex(a => a.id === highlightId);
+      if (idx === -1) return;
+      if (e.key === "p" || e.key === "P") { if (idx > 0) setHighlightId(active[idx - 1].id); }
+      else if (e.key === ";") { if (idx < active.length - 1) setHighlightId(active[idx + 1].id); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [highlightId, active]);
   const getShiftTimes = useCallback((shiftId, dayIndex) => {
     const st = schedTypes.find(t => t.days.includes(dayIndex));
     if (st && st.overrides[shiftId]) return st.overrides[shiftId];
@@ -1454,6 +1472,7 @@ function App() {
       className: "stats-actions"
     }, /*#__PURE__*/React.createElement("button", {
       className: "btn-stat" + (highlightId === e.id ? " btn-stat-active" : ""),
+      "data-solo-emp": e.id,
       title: "Solo — highlight this person's shifts",
       onClick: () => setHighlightId(h => h === e.id ? null : e.id)
     }, "S"), /*#__PURE__*/React.createElement("button", {
