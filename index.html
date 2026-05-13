@@ -464,11 +464,19 @@ function App() {
         if (empId) setHighlightId(empId);
         return;
       }
-      if (!highlightId) return;
-      const idx = active.findIndex(a => a.id === highlightId);
-      if (idx === -1) return;
-      if (e.key === "p" || e.key === "P") { if (idx > 0) setHighlightId(active[idx - 1].id); }
-      else if (e.key === ";") { if (idx < active.length - 1) setHighlightId(active[idx + 1].id); }
+      if (e.key === "p" || e.key === "P" || e.key === ";") {
+        const up = e.key === "p" || e.key === "P";
+        let idx = highlightId ? active.findIndex(a => a.id === highlightId) : -1;
+        if (idx === -1) {
+          const focusedId = document.activeElement && document.activeElement.dataset.soloEmp;
+          if (focusedId) idx = active.findIndex(a => a.id === focusedId);
+        }
+        if (idx === -1) return;
+        const next = up ? idx - 1 : idx + 1;
+        if (next < 0 || next >= active.length) return;
+        if (highlightId) setHighlightId(active[next].id);
+        setTimeout(() => { const btn = document.querySelector(`[data-solo-emp="${active[next].id}"]`); if (btn) { btn.focus(); btn.scrollIntoView({block:"nearest"}); } }, 0);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
