@@ -119,8 +119,9 @@
   .stats-row{display:flex;padding:6px 0;border-bottom:1px solid #f0ece4;align-items:center;min-width:500px}
   .stats-cell{font-family:'Nunito',sans-serif;font-size:13px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
   .stats-name{flex:0 0 210px;min-width:170px}
-  .stats-mo{flex:0 0 140px;justify-content:center}
+  .stats-mo{flex:0 0 36px;justify-content:center}
   .stats-num{flex:0 0 80px;justify-content:center;text-align:center}
+  .hdr-short{display:none}
   .stats-bold{font-weight:700}
   .stats-hours{font-weight:700;color:#2a6e5a}
   .stats-pref{flex:1 1 200px;min-width:150px}
@@ -199,11 +200,15 @@
     .snap-panel{padding:12px 14px}
     .snap-save-row{flex-direction:column;gap:6px}
     .stats-panel{padding:14px 10px;border-radius:8px}
-    .stats-header,.stats-row{min-width:420px}
-    .stats-name{flex:0 0 110px;min-width:90px}
-    .stats-mo{flex:0 0 100px}
-    .stats-num{flex:0 0 55px}
-    .stats-cell{font-size:12px}
+    .stats-header,.stats-row{min-width:380px}
+    .stats-name{flex:0 0 100px;min-width:80px}
+    .btn-stat{width:22px;height:22px;font-size:11px}
+    .stats-actions{gap:2px}
+    .stats-mo{flex:0 0 30px}
+    .stats-num{flex:0 0 48px}
+    .stats-cell{font-size:11px}
+    .stats-pref{flex:0 0 70px}
+    .hdr-full{display:none}.hdr-short{display:inline}
     .stats-pref{min-width:100px}
     .modal-overlay{padding:8px}
     .modal{padding:16px;border-radius:10px}
@@ -1472,12 +1477,12 @@ function App() {
     className: "stats-cell stats-num stats-bold"
   }, "Hours"), /*#__PURE__*/React.createElement("span", {
     className: "stats-cell stats-num stats-bold"
-  }, "Total"), shifts.map(s => /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {className: "hdr-full"}, "Total"), /*#__PURE__*/React.createElement("span", {className: "hdr-short"}, "T")), shifts.map(s => /*#__PURE__*/React.createElement("span", {
     key: s.id,
     className: "stats-cell stats-num"
-  }, s.name)), showPrefs && /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {className: "hdr-full"}, s.name), /*#__PURE__*/React.createElement("span", {className: "hdr-short"}, s.name[0]))), showPrefs && /*#__PURE__*/React.createElement("span", {
     className: "stats-cell stats-pref"
-  }, "Preferences")), active.map(e => {
+  }, /*#__PURE__*/React.createElement("span", {className: "hdr-full"}, "Preferences"), /*#__PURE__*/React.createElement("span", {className: "hdr-short"}, "Pref"))), active.map(e => {
     const st = stats[e.id];
     if (!st) return null;
     const mcOpts = ["", "Morning/Afternoon", "Afternoon/Closing"];
@@ -1495,7 +1500,9 @@ function App() {
       style: {
         background: e.color
       }
-    }), " ", e.name, /*#__PURE__*/React.createElement("span", {
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1 1 0", minWidth: 0}
+    }, fName(e.name)), /*#__PURE__*/React.createElement("span", {
       className: "stats-actions"
     }, /*#__PURE__*/React.createElement("button", {
       className: "btn-stat" + (highlightId === e.id ? " btn-stat-active" : ""),
@@ -1514,8 +1521,9 @@ function App() {
       },
       title: "Click to cycle M/C"
     }, e.shiftPref ? /*#__PURE__*/React.createElement("span", {
-      className: `mo-badge ${e.shiftPref === "Morning/Afternoon" ? "mo-ma" : "mo-ac"}`
-    }, e.shiftPref) : /*#__PURE__*/React.createElement("span", {
+      style: {width: 14, height: 14, borderRadius: "50%", display: "inline-block", background: e.shiftPref === "Morning/Afternoon" ? "#d4a017" : "#5558a0"},
+      title: e.shiftPref
+    }) : /*#__PURE__*/React.createElement("span", {
       style: {
         color: "#ccc",
         fontSize: 11
