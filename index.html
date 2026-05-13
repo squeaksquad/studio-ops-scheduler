@@ -118,13 +118,20 @@
   .stats-header{display:flex;border-bottom:2px solid #d0cbc2;padding-bottom:6px;margin-bottom:4px;min-width:500px}
   .stats-row{display:flex;padding:6px 0;border-bottom:1px solid #f0ece4;align-items:center;min-width:500px}
   .stats-cell{font-family:'Nunito',sans-serif;font-size:13px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
-  .stats-name{flex:0 0 150px;min-width:120px}
+  .stats-name{flex:0 0 210px;min-width:170px}
   .stats-mo{flex:0 0 140px;justify-content:center}
   .stats-num{flex:0 0 80px;justify-content:center;text-align:center}
   .stats-bold{font-weight:700}
   .stats-hours{font-weight:700;color:#2a6e5a}
   .stats-pref{flex:1 1 200px;min-width:150px}
   .stats-pref-text{font-size:12px;color:#777;line-height:1.3}
+  .stats-actions{display:flex;gap:4px;margin-left:auto;flex-shrink:0}
+  .btn-stat{background:none;border:1px solid #e0dbd2;width:26px;height:26px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#999;padding:0;flex-shrink:0}
+  .btn-stat:hover{border-color:#999;color:#555;background:#f5f2ec}
+  .btn-stat-active{background:#d4a017!important;border-color:#d4a017!important;color:#fff!important}
+  .btn-stat-copied{background:#2a6e5a!important;border-color:#2a6e5a!important;color:#fff!important}
+  .hl-dim{opacity:0.08!important;pointer-events:none}
+  .hl-dim-row{opacity:0.15}
   .mo-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
   .mo-badge.mo-ma{background:#FFF8E7;color:#9a7b2d;border:1px solid #E8D5A0}
   .mo-badge.mo-ac{background:#ECEEFF;color:#5558a0;border:1px solid #A8ABE8}
@@ -432,6 +439,8 @@ function App() {
   const [showSnapPanel, setShowSnapPanel] = useState(false);
   const [soloId, setSoloId] = useState(null);
   const [showSolo, setShowSolo] = useState(false);
+  const [highlightId, setHighlightId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
   const gridRef = useRef(null);
   const soloRef = useRef(null);
   const exportRef = useRef(null);
@@ -826,6 +835,28 @@ function App() {
     const emp = emps.find(e => e.id === soloId);
     const fname = emp ? `${emp.name.replace(/\s+/g, "-").toLowerCase()}-schedule.png` : "worker-schedule.png";
     await captureElement(soloRef.current, fname);
+  };
+  const copyEmpShifts = (empId) => {
+    const emp = emps.find(e => e.id === empId);
+    if (!emp) return;
+    const lines = [];
+    DAYS.forEach((day, di) => {
+      const dayShifts = [];
+      shifts.forEach(sh => {
+        locs.forEach(loc => {
+          if (off.has(dk(sh.id, loc.id, di))) return;
+          if (sched[sk(di, sh.id, loc.id)] === empId) {
+            const t = getShiftTimes(sh.id, di);
+            dayShifts.push(`${sh.name} (${loc.name}) ${tl(t.start)}–${tl(t.end)}`);
+          }
+        });
+      });
+      if (dayShifts.length) lines.push(`${day}: ${dayShifts.join(", ")}`);
+    });
+    const txt = lines.length ? `${emp.name}'s Schedule\n${lines.join("\n")}` : `${emp.name} has no shifts scheduled.`;
+    navigator.clipboard.writeText(txt);
+    setCopiedId(empId);
+    setTimeout(() => setCopiedId(null), 1500);
   };
   const B = [{
     bg: "#FFF8E7",
@@ -1268,6 +1299,7 @@ function App() {
         const key = sk(di, sh.id, loc.id);
         const val = sched[key] || "";
         const emp = active.find(e => e.id === val);
+        const hlDim = highlightId && val !== highlightId;
         if (editMode && !paintMode) return /*#__PURE__*/React.createElement("td", {
           key: di,
           className: "cell",
@@ -1304,7 +1336,8 @@ function App() {
             className: "cell",
             style: {
               background: emp ? emp.color : c.bg,
-              borderBottom: bb
+              borderBottom: bb,
+              opacity: hlDim ? 0.08 : 1
             },
             onClick: (e) => paintClick(di, sh.id, loc.id, e),
             onContextMenu: e => {
@@ -1333,7 +1366,8 @@ function App() {
           className: "cell",
           style: {
             background: emp ? emp.color : c.bg,
-            borderBottom: bb
+            borderBottom: bb,
+            opacity: hlDim ? 0.08 : 1
           },
           onClick: (e) => paintClick(di, sh.id, loc.id, e)
         }, /*#__PURE__*/React.createElement("div", {
@@ -1349,7 +1383,8 @@ function App() {
           className: "cell",
           style: {
             background: emp ? emp.color : c.bg,
-            borderBottom: bb
+            borderBottom: bb,
+            opacity: hlDim ? 0.08 : 1
           }
         }, /*#__PURE__*/React.createElement("select", {
           className: "cell-select",
@@ -1390,7 +1425,9 @@ function App() {
     className: "stats-cell stats-mo"
   }, "M/C"), /*#__PURE__*/React.createElement("span", {
     className: "stats-cell stats-num stats-bold"
-  }, "Hours"), shifts.map(s => /*#__PURE__*/React.createElement("span", {
+  }, "Hours"), /*#__PURE__*/React.createElement("span", {
+    className: "stats-cell stats-num stats-bold"
+  }, "Total"), shifts.map(s => /*#__PURE__*/React.createElement("span", {
     key: s.id,
     className: "stats-cell stats-num"
   }, s.name)), showPrefs && /*#__PURE__*/React.createElement("span", {
@@ -1405,7 +1442,7 @@ function App() {
     };
     return /*#__PURE__*/React.createElement("div", {
       key: e.id,
-      className: "stats-row"
+      className: "stats-row" + (highlightId && highlightId !== e.id ? " hl-dim-row" : "")
     }, /*#__PURE__*/React.createElement("span", {
       className: "stats-cell stats-name"
     }, /*#__PURE__*/React.createElement("span", {
@@ -1413,7 +1450,17 @@ function App() {
       style: {
         background: e.color
       }
-    }), " ", e.name), /*#__PURE__*/React.createElement("span", {
+    }), " ", e.name, /*#__PURE__*/React.createElement("span", {
+      className: "stats-actions"
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "btn-stat" + (highlightId === e.id ? " btn-stat-active" : ""),
+      title: "Solo — highlight this person's shifts",
+      onClick: () => setHighlightId(h => h === e.id ? null : e.id)
+    }, "S"), /*#__PURE__*/React.createElement("button", {
+      className: "btn-stat" + (copiedId === e.id ? " btn-stat-copied" : ""),
+      title: copiedId === e.id ? "Copied!" : "Copy shifts to clipboard",
+      onClick: () => copyEmpShifts(e.id)
+    }, copiedId === e.id ? "\u2713" : "\uD83D\uDCCB"))), /*#__PURE__*/React.createElement("span", {
       className: "stats-cell stats-mo",
       onClick: cycleMC,
       style: {
@@ -1429,10 +1476,10 @@ function App() {
       }
     }, "\u2014")), /*#__PURE__*/React.createElement("span", {
       className: "stats-cell stats-num stats-hours",
-      style: st.h < 35 ? {
-        color: "#c0392b"
-      } : {}
-    }, fmtDur(st.h)), shifts.map(s => /*#__PURE__*/React.createElement("span", {
+      style: st.h < 35 ? {color: "#c0392b"} : st.h > 39 ? {color: "#d4a017"} : {}
+    }, fmtDur(st.h)), /*#__PURE__*/React.createElement("span", {
+      className: "stats-cell stats-num stats-bold"
+    }, Object.values(st.by).reduce((a, b) => a + b, 0)), shifts.map(s => /*#__PURE__*/React.createElement("span", {
       key: s.id,
       className: "stats-cell stats-num"
     }, st.by[s.id] || 0)), showPrefs && /*#__PURE__*/React.createElement("span", {
@@ -1522,7 +1569,7 @@ function App() {
             padding: 6,
             color: emp ? cTxt(emp.color) : "#ccc"
           }
-        }, emp ? emp.name : "—");
+        }, emp ? fName(emp.name) : "—");
       }));
     });
   })))));
